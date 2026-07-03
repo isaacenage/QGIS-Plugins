@@ -27,6 +27,7 @@ from .elements.chart_specs import (
     CHART_SPECS, CHART_TYPE_ORDER, DEFAULT_CHART_TYPE, shape_of,
 )
 from .form_util import compact_form, no_horizontal_scroll, shrink_combo
+from .field_select import FieldListSelector
 
 # element types that bind to no vector layer (the Layer row is hidden for them).
 # The legend mirrors every layer on the map, so it binds to none of its own.
@@ -162,6 +163,9 @@ class ElementConfigForm(QWidget):
 
     def _wire(self, widget):
         """Connect a dynamic control's change signal to :attr:`changed`."""
+        if isinstance(widget, FieldListSelector):
+            widget.changed.connect(self.changed)
+            return
         if isinstance(widget, _PathPicker):
             widget.changed.connect(self.changed)
         elif isinstance(widget, QgsFieldComboBox):
@@ -185,6 +189,11 @@ class ElementConfigForm(QWidget):
             c.setAllowEmptyFieldName(True)
         c.setLayer(self.layer_combo.currentLayer())
         return c
+
+    def _field_list(self):
+        w = FieldListSelector()
+        w.set_layer(self.layer_combo.currentLayer())
+        return w
 
     def _set_layer_row_visible(self, visible):
         lbl = self.form.labelForField(self.layer_combo)
@@ -261,11 +270,11 @@ class ElementConfigForm(QWidget):
         elif t == "category_selector":
             self._add_dyn("category_field", "Category field", self._field_combo())
         elif t == "filter":
-            # multi-field definition query: one dropdown per column at runtime
-            self._add_dyn("fields", "Fields (comma sep)", QLineEdit(""))
+            # multi-field definition query: one dropdown per chosen column
+            self._add_dyn("fields", "Filter fields", self._field_list())
         # legend takes no rows — it mirrors every layer on the map automatically
         elif t == "list":
-            self._add_dyn("display_fields", "Fields (comma sep)", QLineEdit(""))
+            self._add_dyn("display_fields", "Columns to show", self._field_list())
 
     def _on_chart_type_changed(self):
         """Rebuild the chart field rows for the newly-selected chart type.
@@ -320,9 +329,12 @@ class ElementConfigForm(QWidget):
             self._add_dyn("close_field", "Close field", self._field_combo())
 
     def _on_layer(self, _lyr):
+        lyr = self.layer_combo.currentLayer()
         for w in self._dyn.values():
             if isinstance(w, QgsFieldComboBox):
-                w.setLayer(self.layer_combo.currentLayer())
+                w.setLayer(lyr)
+            elif isinstance(w, FieldListSelector):
+                w.set_layer(lyr)
         self.changed.emit()
 
     def _load_values(self, config):
@@ -350,6 +362,11 @@ class ElementConfigForm(QWidget):
                     w.setCurrentIndex(i)
             elif isinstance(w, _PathPicker):
                 w.set_path(val or "")
+            elif isinstance(w, FieldListSelector):
+                names = val if isinstance(val, list) else (
+                    [s.strip() for s in val.split(",")] if isinstance(val, str)
+                    else [])
+                w.set_selected([n for n in names if n])
             elif isinstance(w, QPlainTextEdit):
                 w.setPlainText(val if isinstance(val, str) else "")
             elif isinstance(w, QLineEdit):
@@ -389,6 +406,12 @@ class ElementConfigForm(QWidget):
                 out[key] = data if data is not None else w.currentText()
             elif isinstance(w, _PathPicker):
                 out[key] = w.path()
+            elif isinstance(w, FieldListSelector):
+                names = w.selected()
+                if names:
+                    out[key] = names
+                elif not drop_empty:
+                    out[key] = []
             elif isinstance(w, QPlainTextEdit):
                 out[key] = w.toPlainText()
             elif isinstance(w, QLineEdit):
