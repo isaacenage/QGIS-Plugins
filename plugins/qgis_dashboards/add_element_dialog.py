@@ -21,7 +21,7 @@ from qgis.PyQt.QtWidgets import (
 from qgis.PyQt.QtCore import pyqtSignal
 from qgis.PyQt.QtGui import QFont
 from qgis.gui import QgsMapLayerComboBox, QgsFieldComboBox
-from qgis.core import QgsMapLayerProxyModel
+from qgis.core import QgsMapLayerProxyModel, QgsFieldProxyModel
 from .elements import ELEMENT_LABELS
 from .elements.chart_specs import (
     CHART_SPECS, CHART_TYPE_ORDER, DEFAULT_CHART_TYPE, shape_of,
@@ -189,10 +189,12 @@ class ElementConfigForm(QWidget):
         elif isinstance(widget, QLineEdit):
             widget.textChanged.connect(lambda *_: self.changed.emit())
 
-    def _field_combo(self, allow_empty=False):
+    def _field_combo(self, allow_empty=False, numeric=False):
         c = QgsFieldComboBox()
         if allow_empty:
             c.setAllowEmptyFieldName(True)
+        if numeric:
+            c.setFilters(QgsFieldProxyModel.Numeric)
         c.setLayer(self.layer_combo.currentLayer())
         return c
 
@@ -272,7 +274,7 @@ class ElementConfigForm(QWidget):
             stat.addItems(["count", "sum", "mean", "min", "max"])
             self._add_dyn("statistic", "Statistic", stat)
             self._add_dyn("value_field", "Value field (sum/mean/min/max)",
-                          self._field_combo())
+                          self._field_combo(numeric=True))
             chk = QCheckBox()
             chk.setChecked(True)
             self._add_dyn("show_totals", "Show totals", chk)
@@ -314,7 +316,8 @@ class ElementConfigForm(QWidget):
         stat = QComboBox()
         stat.addItems(["count", "sum", "mean"])
         self._add_dyn("statistic", "Statistic", stat)
-        self._add_dyn("value_field", "Value field (sum/mean)", self._field_combo())
+        self._add_dyn("value_field", "Value field (sum/mean)",
+                      self._field_combo(numeric=True))
 
     _STAT_LABELS = {"count": "Count", "sum": "Sum", "mean": "Average",
                     "min": "Minimum", "max": "Maximum"}
@@ -331,7 +334,7 @@ class ElementConfigForm(QWidget):
             stat.addItem(self._STAT_LABELS[key], key)
         stat.addItem("Custom expression…", "custom")
         self._add_dyn(stat_key, label + " statistic", stat)
-        self._add_dyn(field_key, label + " field", self._field_combo())
+        self._add_dyn(field_key, label + " field", self._field_combo(numeric=True))
         self._add_dyn(expr_key, label + " expression (custom)", QLineEdit(""))
         stat.currentIndexChanged.connect(
             lambda *_: self._sync_agg_rows(stat_key, field_key, expr_key))
@@ -366,14 +369,20 @@ class ElementConfigForm(QWidget):
             self._add_dyn("series_field", "Series field", self._field_combo())
             self._add_chart_stat_value()
         elif shape == "xy":
-            self._add_dyn("x_field", "X field (numeric)", self._field_combo())
-            self._add_dyn("y_field", "Y field (numeric)", self._field_combo())
+            self._add_dyn("x_field", "X field (numeric)",
+                          self._field_combo(numeric=True))
+            self._add_dyn("y_field", "Y field (numeric)",
+                          self._field_combo(numeric=True))
         elif shape == "xyz":
-            self._add_dyn("x_field", "X field (numeric)", self._field_combo())
-            self._add_dyn("y_field", "Y field (numeric)", self._field_combo())
-            self._add_dyn("size_field", "Size field (numeric)", self._field_combo())
+            self._add_dyn("x_field", "X field (numeric)",
+                          self._field_combo(numeric=True))
+            self._add_dyn("y_field", "Y field (numeric)",
+                          self._field_combo(numeric=True))
+            self._add_dyn("size_field", "Size field (numeric)",
+                          self._field_combo(numeric=True))
         elif shape == "bins":
-            self._add_dyn("value_field", "Value field (numeric)", self._field_combo())
+            self._add_dyn("value_field", "Value field (numeric)",
+                          self._field_combo(numeric=True))
             self._add_dyn("bin_count", "Number of bins", self._spin(2, 50, 10))
         elif shape == "ohlc":
             self._add_dyn("category_field", "Category (x) field", self._field_combo())
