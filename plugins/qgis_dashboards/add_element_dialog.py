@@ -28,6 +28,7 @@ from .elements.chart_specs import (
 )
 from .form_util import compact_form, no_horizontal_scroll, shrink_combo
 from .field_select import FieldListSelector
+from .indicator_expr import build_aggregate, parse_aggregate, STATISTICS
 
 # element types that bind to no vector layer (the Layer row is hidden for them).
 # The legend mirrors every layer on the map, so it binds to none of its own.
@@ -136,6 +137,11 @@ class ElementConfigForm(QWidget):
         self._rebuild()
         if element is not None:
             self._load_values(element.config)
+        if element is not None and element.type_name == "indicator":
+            self._prefill_agg("statistic", "value_field", "value_expression",
+                              element.config)
+            self._prefill_agg("reference_statistic", "reference_field",
+                              "reference_expression", element.config)
 
     def _spin(self, lo, hi, value):
         s = QSpinBox()
@@ -222,16 +228,19 @@ class ElementConfigForm(QWidget):
             # Appearance, and the banner height is the generic tile size there.
             self._add_dyn("logo_path", "Logo image (opt)", _PathPicker())
         elif t == "indicator":
-            self._add_dyn("value_expression", "Value expression",
-                          QLineEdit("count(1)"))
-            self._add_dyn("reference_expression", "Reference expr (opt)",
-                          QLineEdit(""))
+            self._add_agg_rows("statistic", "value_field",
+                               "value_expression", "Value")
+            self._add_agg_rows("reference_statistic", "reference_field",
+                               "reference_expression", "Reference")
             self._add_dyn("top_text", "Top label (opt)", QLineEdit(""))
             self._add_dyn("prefix", "Value prefix", QLineEdit(""))
             self._add_dyn("suffix", "Value suffix", QLineEdit(""))
             self._add_dyn("decimals", "Decimal places", self._spin(0, 6, 0))
             self._add_dyn("no_value_text", "No-data text", QLineEdit("No data"))
             self._add_dyn("icon_path", "Icon image (opt)", _PathPicker())
+            self._sync_agg_rows("statistic", "value_field", "value_expression")
+            self._sync_agg_rows("reference_statistic", "reference_field",
+                                "reference_expression")
             # value text size, icon size/position and the value animation are
             # styling — configured from the Tile Appearance panel.
         elif t == "map":
@@ -307,6 +316,45 @@ class ElementConfigForm(QWidget):
         self._add_dyn("statistic", "Statistic", stat)
         self._add_dyn("value_field", "Value field (sum/mean)", self._field_combo())
 
+    _STAT_LABELS = {"count": "Count", "sum": "Sum", "mean": "Average",
+                    "min": "Minimum", "max": "Maximum"}
+
+    def _add_agg_rows(self, stat_key, field_key, expr_key, label):
+        """Statistic combo + field + Custom-expression row group.
+
+        Writes the derived aggregate into *expr_key* (what the element reads);
+        keeps *stat_key*/*field_key* for round-trip editing. ``custom`` reveals
+        the raw expression line.
+        """
+        stat = QComboBox()
+        for key in STATISTICS:
+            stat.addItem(self._STAT_LABELS[key], key)
+        stat.addItem("Custom expression…", "custom")
+        self._add_dyn(stat_key, label + " statistic", stat)
+        self._add_dyn(field_key, label + " field", self._field_combo())
+        self._add_dyn(expr_key, label + " expression (custom)", QLineEdit(""))
+        stat.currentIndexChanged.connect(
+            lambda *_: self._sync_agg_rows(stat_key, field_key, expr_key))
+
+    def _sync_agg_rows(self, stat_key, field_key, expr_key):
+        """Show only the rows the current statistic needs."""
+        stat = self._dyn.get(stat_key)
+        field = self._dyn.get(field_key)
+        expr = self._dyn.get(expr_key)
+        if stat is None:
+            return
+        key = stat.currentData()
+        self._set_row_visible(field, key in ("sum", "mean", "min", "max"))
+        self._set_row_visible(expr, key == "custom")
+
+    def _set_row_visible(self, widget, visible):
+        if widget is None:
+            return
+        lbl = self.form.labelForField(widget)
+        widget.setVisible(visible)
+        if lbl:
+            lbl.setVisible(visible)
+
     def _add_chart_rows(self, chart_type):
         """Add the field rows a chart type's data shape needs."""
         shape = shape_of(chart_type)
@@ -381,6 +429,35 @@ class ElementConfigForm(QWidget):
                 else:
                     w.setText("" if val is None else str(val))
 
+    def _prefill_agg(self, stat_key, field_key, expr_key, config):
+        """Reverse-map a stored expression onto the Statistic+Field rows.
+
+        Prefers an explicit ``statistic`` key; else parses the expression; else
+        (for the reference) leaves it as an empty Custom so there is no ref.
+        """
+        stat_combo = self._dyn.get(stat_key)
+        field_combo = self._dyn.get(field_key)
+        if stat_combo is None:
+            return
+        explicit = config.get(stat_key)
+        parsed = parse_aggregate(config.get(expr_key))
+        if explicit:
+            stat, field = explicit, config.get(field_key)
+        elif parsed:
+            stat, field = parsed[0], parsed[1]
+        elif config.get(expr_key):
+            stat, field = "custom", None          # unrecognized -> Custom
+        elif expr_key == "value_expression":
+            stat, field = "count", None           # value defaults to Count
+        else:
+            stat, field = "custom", None          # reference defaults to none
+        i = stat_combo.findData(stat)
+        if i >= 0:
+            stat_combo.setCurrentIndex(i)
+        if field and isinstance(field_combo, QgsFieldComboBox):
+            field_combo.setField(field)
+        self._sync_agg_rows(stat_key, field_key, expr_key)
+
     def managed_keys(self):
         """Config keys this form owns — so a configure-edit can drop the ones
         the user cleared (an absent key removes, rather than keeps, the old)."""
@@ -436,7 +513,25 @@ class ElementConfigForm(QWidget):
         if lyr:
             cfg["layer_id"] = lyr.id()
         cfg.update(self._dynamic_values())
+        if t == "indicator":
+            self._resolve_agg(cfg, "statistic", "value_field",
+                              "value_expression")
+            self._resolve_agg(cfg, "reference_statistic", "reference_field",
+                              "reference_expression")
         return t, cfg
+
+    def _resolve_agg(self, cfg, stat_key, field_key, expr_key):
+        """Turn Statistic+Field into the aggregate expr, unless Custom."""
+        stat = cfg.get(stat_key)
+        if stat == "custom":
+            return                       # keep the user's raw expression as-is
+        if stat is None:
+            return
+        expr = build_aggregate(stat, cfg.get(field_key))
+        if expr:
+            cfg[expr_key] = expr
+        else:
+            cfg.pop(expr_key, None)      # incomplete (e.g. Sum with no field)
 
 
 class AddElementDialog(QDialog):
