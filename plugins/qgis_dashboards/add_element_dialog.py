@@ -275,6 +275,12 @@ class ElementConfigForm(QWidget):
         # legend takes no rows — it mirrors every layer on the map automatically
         elif t == "list":
             self._add_dyn("display_fields", "Columns to show", self._field_list())
+            self._add_dyn("sort_field", "Sort by (optional)",
+                          self._field_combo(allow_empty=True))
+            direction = QComboBox()
+            direction.addItem("Ascending", "asc")
+            direction.addItem("Descending", "desc")
+            self._add_dyn("sort_dir", "Sort direction", direction)
 
     def _on_chart_type_changed(self):
         """Rebuild the chart field rows for the newly-selected chart type.

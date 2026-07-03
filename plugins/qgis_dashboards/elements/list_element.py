@@ -41,6 +41,7 @@ class ListElement(DashboardElement):
         self.table.setColumnCount(len(fields))
         self.table.setHorizontalHeaderLabels(fields)
         rows = list(self.iter_features())
+        rows = self._sorted(rows)
         limit = int(self.style_get("rows_shown", 200))
         rows = rows[:limit]
         self._fids = [f.id() for f in rows]
@@ -49,6 +50,23 @@ class ListElement(DashboardElement):
             for c, fld in enumerate(fields):
                 self.table.setItem(r, c, QTableWidgetItem(str(feat[fld])))
         self.table.resizeColumnsToContents()
+
+    def _sorted(self, rows):
+        """Sort feature rows by the configured field; unsorted on any problem."""
+        field = self.config.get("sort_field")
+        if not field:
+            return rows
+        lyr = self.layer()
+        if lyr is None or lyr.fields().indexOf(field) < 0:
+            return rows
+        descending = self.config.get("sort_dir", "asc") == "desc"
+        try:
+            return sorted(
+                rows,
+                key=lambda f: (f[field] is None, f[field]),
+                reverse=descending)
+        except TypeError:
+            return rows            # uncomparable/mixed types -> leave as-is
 
     def _on_row(self):
         if not self._interactive:   # Build mode: row selection doesn't act
