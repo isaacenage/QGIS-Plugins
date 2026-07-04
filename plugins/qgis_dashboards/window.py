@@ -1273,6 +1273,13 @@ class DashboardWindow(QMainWindow):
                     rect = (g["x"], g["y"], g["w"], g["h"])
                 if t:
                     self._add_element_to(page, t, cfg, rect)
+            # legacy/implicit edges into a map keep the classic filter+zoom+flash
+            # bundle so older dashboards fly-to as before; explicit action edges
+            # (newer blobs) are left untouched.
+            map_ids = [c.get("id") for c in p.get("elements", [])
+                       if c.get("__type__") == "map" and c.get("id")]
+            if map_ids:
+                self.bus.upgrade_legacy_map_edges(p["id"], map_ids)
 
         active = data.get("active_page")
         idx = next((i for i, pg in enumerate(self._pages)
