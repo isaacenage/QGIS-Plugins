@@ -686,5 +686,54 @@ class ThemeChromeTest(unittest.TestCase):
         self.assertEqual(Theme.from_dict(t.to_dict()).chrome_bg, "#101010")
 
 
+class EdgeActionTest(unittest.TestCase):
+    """Per-edge actions: a flash-only edge drives location, not the filter."""
+
+    def test_flash_only_edge_does_not_filter_but_drives_location(self):
+        bus = DashboardBus()
+        bus.set_active_page("A")
+        bus.set_edge_actions("s", "m", {"flash"})
+        bus.set_filter("s", '"a" = 1')
+        self.assertIsNone(bus.combined_filter_for("m"))          # no filter
+        self.assertEqual(bus.location_actions_for("m"), {"flash"})
+        self.assertEqual(bus.location_filter_for("m"), '("a" = 1)')
+
+    def test_filter_edge_filters(self):
+        bus = DashboardBus()
+        bus.set_active_page("A")
+        bus.set_edge_actions("s", "t", {"filter"})
+        bus.set_filter("s", '"a" = 1')
+        self.assertEqual(bus.combined_filter_for("t"), '("a" = 1)')
+        self.assertEqual(bus.location_actions_for("t"), set())
+
+    def test_bundle_edge_both_filters_and_zooms(self):
+        bus = DashboardBus()
+        bus.set_active_page("A")
+        bus.set_edge_actions("s", "m", {"filter", "zoom", "flash"})
+        bus.set_filter("s", '"a" = 1')
+        self.assertEqual(bus.combined_filter_for("m"), '("a" = 1)')
+        self.assertEqual(bus.location_actions_for("m"), {"zoom", "flash"})
+
+    def test_action_edge_round_trips(self):
+        bus = DashboardBus()
+        bus.set_active_page("A")
+        bus.set_edge_actions("s", "m", {"filter", "zoom"})
+        data = bus.connections_to_dict("A")
+
+        other = DashboardBus()
+        other.set_active_page("A")
+        other.load_connections(data, "A")
+        self.assertEqual(other.targets_of("s"), {"m"})
+        self.assertEqual(other.edge_actions("s", "m"), {"filter", "zoom"})
+
+    def test_upgrade_legacy_map_edges_bundles_implicit_map_edge(self):
+        bus = DashboardBus()
+        bus.set_active_page("A")
+        bus.load_connections({"s": ["m", "t"]}, "A")   # legacy list shape
+        bus.upgrade_legacy_map_edges("A", ["m"])
+        self.assertEqual(bus.edge_actions("s", "m"), {"filter", "zoom", "flash"})
+        self.assertEqual(bus.edge_actions("s", "t"), {"filter"})   # non-map
+
+
 if __name__ == "__main__":
     unittest.main()

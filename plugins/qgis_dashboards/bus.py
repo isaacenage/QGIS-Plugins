@@ -17,6 +17,7 @@ A "filter" is always a QgsExpression-compatible string (or ``None`` to clear).
 from qgis.PyQt.QtCore import QObject, pyqtSignal
 
 from .theme import Theme
+from . import connection_actions as ca
 
 
 class DashboardBus(QObject):
@@ -47,6 +48,10 @@ class DashboardBus(QObject):
         self._active_page = "default"
         self._page_filters = {"default": {}}      # page_id -> {source_id: expr}
         self._page_connections = {"default": {}}  # page_id -> {source_id: set}
+        # page_id -> {(source_id, target_id): set(action)} — per-edge actions,
+        # parallel to _page_connections so the boolean graph (and its perf work)
+        # is untouched; an edge with no entry defaults to {"filter"}.
+        self._page_edge_actions = {"default": {}}
 
     # ---- page-local state (active page) ----
 
@@ -58,16 +63,22 @@ class DashboardBus(QObject):
     def _connections(self):
         return self._page_connections.setdefault(self._active_page, {})
 
+    @property
+    def _edge_actions(self):
+        return self._page_edge_actions.setdefault(self._active_page, {})
+
     def set_active_page(self, page_id):
         self._active_page = page_id or "default"
         self._page_filters.setdefault(self._active_page, {})
         self._page_connections.setdefault(self._active_page, {})
+        self._page_edge_actions.setdefault(self._active_page, {})
         self.connectionsChanged.emit()
         self.filtersChanged.emit()
 
     def forget_page(self, page_id):
         self._page_filters.pop(page_id, None)
         self._page_connections.pop(page_id, None)
+        self._page_edge_actions.pop(page_id, None)
 
     # ---- theme ----
 
@@ -91,12 +102,69 @@ class DashboardBus(QObject):
         self.filtersChanged.emit()
 
     def combined_filter_for(self, target_id):
-        """AND of every connected source's filter, or None if unfiltered."""
+        """AND of every connected *filter*-action source, or None if unfiltered.
+
+        An edge whose action set omits ``"filter"`` (e.g. a flash-only map edge)
+        no longer narrows the target — location-only edges act via
+        :meth:`location_filter_for` instead. Non-map edges are always
+        ``{"filter"}``, so their behavior is unchanged.
+        """
         parts = []
         for source_id, expr in self._source_filters.items():
-            if expr and target_id in self._connections.get(source_id, set()):
+            if (expr and target_id in self._connections.get(source_id, set())
+                    and ca.has_filter(self.edge_actions(source_id, target_id))):
                 parts.append("({})".format(expr))
         return " AND ".join(parts) if parts else None
+
+    # ---- per-edge actions (ArcGIS source -> action -> target) ----
+
+    def edge_actions(self, source_id, target_id):
+        """The action set on one edge, defaulting to ``{"filter"}``.
+
+        The *map default* ({filter,zoom,flash}) is materialized into the store at
+        load time (:meth:`upgrade_legacy_map_edges`), so a bare default here is a
+        genuine filter-only edge, not an un-upgraded map edge.
+        """
+        return set(self._edge_actions.get((source_id, target_id),
+                                          ca.DEFAULT_ACTIONS))
+
+    def set_edge_actions(self, source_id, target_id, actions):
+        """Set the action set on one edge; empty actions removes the edge."""
+        if source_id == target_id:
+            return
+        actions = {a for a in (actions or ()) if a in ca.ACTIONS}
+        targets = self.targets_of(source_id)
+        if actions:
+            self._edge_actions[(source_id, target_id)] = actions
+            targets.add(target_id)
+            self._connections[source_id] = targets
+        else:
+            self._edge_actions.pop((source_id, target_id), None)
+            targets.discard(target_id)
+            if targets:
+                self._connections[source_id] = targets
+            else:
+                self._connections.pop(source_id, None)
+        self.connectionsChanged.emit()
+        if self._source_filters.get(source_id):
+            self.filtersChanged.emit()
+
+    def location_filter_for(self, target_id):
+        """AND of the exprs of sources wired to *target* with a location action."""
+        parts = []
+        for source_id, expr in self._source_filters.items():
+            if (expr and target_id in self._connections.get(source_id, set())
+                    and ca.location_part(self.edge_actions(source_id, target_id))):
+                parts.append("({})".format(expr))
+        return " AND ".join(parts) if parts else None
+
+    def location_actions_for(self, target_id):
+        """Union of location actions across *target*'s active incoming edges."""
+        acts = set()
+        for source_id, expr in self._source_filters.items():
+            if expr and target_id in self._connections.get(source_id, set()):
+                acts |= ca.location_part(self.edge_actions(source_id, target_id))
+        return acts
 
     def active_filter_count(self):
         return len(self._source_filters)
@@ -114,6 +182,8 @@ class DashboardBus(QObject):
         self._connections.pop(element_id, None)
         for targets in self._connections.values():
             targets.discard(element_id)
+        for key in [k for k in self._edge_actions if element_id in k]:
+            self._edge_actions.pop(key, None)
         self.filtersChanged.emit()
 
     # ---- connection graph ----
@@ -161,14 +231,26 @@ class DashboardBus(QObject):
     def connections_to_dict(self, page_id=None):
         conns = (self._page_connections.get(page_id, {})
                  if page_id is not None else self._connections)
-        return {src: sorted(tgts) for src, tgts in conns.items() if tgts}
+        acts = (self._page_edge_actions.get(page_id, {})
+                if page_id is not None else self._edge_actions)
+        return ca.serialize(conns, acts)
 
     def load_connections(self, data, page_id=None):
         target = page_id if page_id is not None else self._active_page
-        conns = {}
-        if isinstance(data, dict):
-            for src, tgts in data.items():
-                if tgts:
-                    conns[src] = set(tgts)
-        self._page_connections[target] = conns
+        adjacency, actions = ca.deserialize(data)
+        self._page_connections[target] = adjacency
+        self._page_edge_actions[target] = actions
         self.connectionsChanged.emit()
+
+    def upgrade_legacy_map_edges(self, page_id, map_ids):
+        """Give implicit edges into a map the classic filter+zoom+flash bundle.
+
+        Called at load once element types are known, so legacy dashboards keep
+        their bundled fly-to behavior while new/edited edges carry explicit
+        action sets.
+        """
+        target = page_id if page_id is not None else self._active_page
+        adjacency = self._page_connections.get(target, {})
+        actions = self._page_edge_actions.get(target, {})
+        self._page_edge_actions[target] = ca.upgrade_legacy_map_edges(
+            actions, adjacency, map_ids)
