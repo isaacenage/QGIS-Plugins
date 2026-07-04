@@ -174,6 +174,17 @@ class ChartElement(DashboardElement):
 
     def refresh(self):
         self._produced = self._produce()
+        self._render_selection()
+
+    def _render_selection(self):
+        """Redraw the current data with the current selection — no re-query.
+
+        Used both by ``refresh`` and directly on a click so the highlighted bar
+        updates instantly, independent of the (possibly heavy) cross-filter
+        fan-out. A source-only chart is not a filter target, so its own
+        ``filtersChanged`` is a no-op for it; without this its selection would
+        otherwise only repaint as a side effect of an unrelated refresh.
+        """
         self.view.set_data(self._produced, self._selected,
                            self._spec().get("inner", 0.0))
 
@@ -206,10 +217,12 @@ class ChartElement(DashboardElement):
             return
         if self._selected == cat:                # toggle off
             self._selected = None
+            self._render_selection()             # instant feedback, then fan out
             self.bus.set_filter(self.id, None)
         else:
             expr = self._filter_for(cat)
             if expr is None:
                 return
             self._selected = cat
+            self._render_selection()             # instant feedback, then fan out
             self.bus.set_filter(self.id, expr)

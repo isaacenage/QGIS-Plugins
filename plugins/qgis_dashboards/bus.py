@@ -150,7 +150,13 @@ class DashboardBus(QObject):
         else:
             self._connections.pop(source_id, None)
         self.connectionsChanged.emit()
-        self.filtersChanged.emit()
+        # Rewiring a source that contributes no active filter cannot change any
+        # target's combined_filter_for(...), so skip the (expensive) filter
+        # fan-out — every accepting tile re-queries its layer on filtersChanged.
+        # This is what made ticking Connections checkboxes heavy on a dashboard
+        # with many tiles: each tick triggered N full layer scans for no change.
+        if self._source_filters.get(source_id):
+            self.filtersChanged.emit()
 
     def connections_to_dict(self, page_id=None):
         conns = (self._page_connections.get(page_id, {})

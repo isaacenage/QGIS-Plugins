@@ -44,6 +44,11 @@ _ALIGN = {
     "right": Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter,
 }
 
+# Sentinel for "we have never computed a combined filter yet", so the first
+# filtersChanged after construction always refreshes (distinct from None, which
+# is a real, unfiltered combined-filter value). See ``_on_filters_changed``.
+_FILTER_UNSET = object()
+
 
 class DashboardElement(QFrame):
     """A single dashboard tile. Subclass and implement refresh()."""
@@ -79,6 +84,9 @@ class DashboardElement(QFrame):
         # ``set_interactive``; the initial value is overwritten when the tile is
         # placed (DashboardCanvas.add_tile -> GridTile.set_locked).
         self._interactive = True
+        # the combined filter we last refreshed on; a filtersChanged that leaves
+        # it unchanged is a no-op for this tile, so we skip the layer re-query.
+        self._last_combined_filter = _FILTER_UNSET
         self.setObjectName("dashboardElement")
         self.setFrameShape(QFrame.Shape.StyledPanel)
         # full-bleed tiles fill edge-to-edge; their rectangular child is clipped
@@ -240,6 +248,10 @@ class DashboardElement(QFrame):
         self.desc_label.setText(desc or "")
         if not self.full_bleed:
             self.desc_label.setVisible(bool(desc))
+        # config edits (e.g. base_filter / layer binding) can change the combined
+        # filter with no bus signal; invalidate so the next filtersChanged is
+        # never wrongly skipped by the change-detection in _on_filters_changed.
+        self._last_combined_filter = _FILTER_UNSET
         self.apply_theme()
         self.refresh()
 
@@ -332,8 +344,19 @@ class DashboardElement(QFrame):
     # ---- bus reaction ----
 
     def _on_filters_changed(self):
-        if self.accepts_filter:
-            self.refresh()
+        # filtersChanged is a payload-less global broadcast: it fires for *any*
+        # source's change. This tile only needs to re-query when *its own*
+        # combined filter actually changes (i.e. a source it is wired to
+        # changed). Short-circuiting the unchanged case keeps a single filter
+        # edit O(connected tiles) instead of O(all tiles) — the difference
+        # between snappy and frozen on a dashboard with many tiles.
+        if not self.accepts_filter:
+            return
+        flt = self._combined_filter()
+        if flt == self._last_combined_filter:
+            return
+        self._last_combined_filter = flt
+        self.refresh()
 
     def _on_filters_cleared(self):
         """Sources override to reset their own selection state."""

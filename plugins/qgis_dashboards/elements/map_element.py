@@ -38,10 +38,10 @@ from qgis.PyQt.QtGui import QColor
 from qgis.PyQt.QtWidgets import QFrame, QVBoxLayout, QLabel
 from qgis.gui import QgsMapCanvas, QgsMapToolPan, QgsRubberBand
 from qgis.core import (
-    QgsFeatureRequest, QgsRectangle, NULL,
+    QgsFeatureRequest, QgsRectangle, QgsGeometry, NULL,
     QgsExpressionContext, QgsExpressionContextUtils,
 )
-from .base import DashboardElement
+from .base import DashboardElement, _FILTER_UNSET
 from .map_filter import extent_filter_expression
 from .map_identify import search_rect, feature_summary
 
@@ -184,6 +184,14 @@ class MapElement(DashboardElement):
         # the same filter (esp. in relay mode, where pushing would otherwise
         # re-fire filtersChanged -> recompute -> push in a loop).
         self._last_pushed = None
+        # set when the map programmatically flies to an incoming filter, so the
+        # extentsChanged it provokes does NOT push the flown-to extent back out as
+        # a source filter. Without this, clicking a chart wired to the map causes
+        # fly -> extent push -> every connected tile re-queries with the heavy
+        # per-feature intersects(transform(...)) spatial expression — the multi-
+        # second freeze. A fly-to should zoom the map, not re-filter the dashboard
+        # by the zoom rectangle (a genuine user pan still pushes normally).
+        self._suppress_extent_push = False
         # rendering-only filtered clone of the bound layer (visual target).
         self._filtered_clone = None
         # the bound layer whose selectionChanged we are subscribed to (selection
@@ -253,6 +261,7 @@ class MapElement(DashboardElement):
         self.apply_theme()
         self._update_selection_hook()
         self._last_pushed = None       # force the new mode to re-push
+        self._last_combined_filter = _FILTER_UNSET   # don't skip the next filter
         self.refresh()
         self._push_source_filter()
 
@@ -315,6 +324,13 @@ class MapElement(DashboardElement):
         self.bus.set_filter(self.id, expr)
 
     def _push_source_filter(self):
+        # A fly-to (reacting to an incoming filter) provokes an extentsChanged
+        # that schedules this push; consume the suppression flag so we don't push
+        # the flown-to extent back out (which would re-query every connected tile
+        # with the heavy spatial expression). Read+clear before the early returns
+        # so the flag never gets stuck.
+        suppress = self._suppress_extent_push
+        self._suppress_extent_push = False
         # Only the visible (active-page) map in Use mode pushes, so its filter
         # never lands in another page's page-local filter state and a Build-mode
         # map never filters anything.
@@ -322,6 +338,8 @@ class MapElement(DashboardElement):
             return
         mode = self._source_mode()
         if mode == "extent":
+            if suppress:
+                return
             ext = self.canvas.extent()
             authid = self.canvas.mapSettings().destinationCrs().authid()
             expr = extent_filter_expression(
@@ -454,30 +472,38 @@ class MapElement(DashboardElement):
             return
         self._last_fly_expr = expr
         if expr is None:
-            # filters cleared: return to mirroring the QGIS canvas extent
+            # filters cleared: return to mirroring the QGIS canvas extent. The
+            # resulting push is left intact — it reflects the map's honest view
+            # and (unlike a fly-to a selection) does not create a feedback loop.
             self._sync_extent(force=True)
             return
         lyr = self.layer()
         if lyr is None:
             return
-        req = QgsFeatureRequest().setFilterExpression(expr)
+        # One geometry-only pass: we need each matching feature's geometry (for
+        # the bbox and the flash) but none of its attributes, so setNoAttributes
+        # skips attribute I/O, and we reuse the collected geometries for the flash
+        # instead of a second getFeatures scan.
+        req = QgsFeatureRequest().setFilterExpression(expr).setNoAttributes()
         # scope so a spatial source's @layer / layer_property(...) resolves
         ctx = QgsExpressionContext()
         ctx.appendScopes(QgsExpressionContextUtils.globalProjectLayerScopes(lyr))
         req.setExpressionContext(ctx)
         rect = QgsRectangle()
         rect.setMinimal()
-        fids = []
+        geoms = []
         for f in lyr.getFeatures(req):
             geom = f.geometry()
             if not geom.isEmpty():
                 rect.combineExtentWith(geom.boundingBox())
-                fids.append(f.id())
+                geoms.append(QgsGeometry(geom))
         if not rect.isEmpty():
             rect.scale(1.5)
+            # this fly is a reaction to a filter, not a user pan: don't push it
+            self._suppress_extent_push = True
             self.canvas.setExtent(rect)
             self.canvas.refresh()
-            self._flash(lyr, fids)
+            self._flash(lyr, geoms)
 
     # ---- feature action (zoom/flash on a list-row pick) ----
 
@@ -485,27 +511,30 @@ class MapElement(DashboardElement):
         lyr = self.layer()
         if lyr is None or not fids:
             return
-        req = QgsFeatureRequest().setFilterFids(fids)
+        # geometry-only single pass, reused for both the bbox and the flash
+        req = QgsFeatureRequest().setFilterFids(fids).setNoAttributes()
         rect = QgsRectangle()
         rect.setMinimal()
+        geoms = []
         for f in lyr.getFeatures(req):
             geom = f.geometry()
             if not geom.isEmpty():
                 rect.combineExtentWith(geom.boundingBox())
+                geoms.append(QgsGeometry(geom))
         if not rect.isEmpty():
             rect.scale(1.5)
+            self._suppress_extent_push = True   # programmatic zoom, not a user pan
             self.canvas.setExtent(rect)
             self.canvas.refresh()
-            self._flash(lyr, fids)
+            self._flash(lyr, geoms)
 
-    def _flash(self, lyr, fids):
+    def _flash(self, lyr, geoms):
         if self._rubber:
             self.canvas.scene().removeItem(self._rubber)
         self._rubber = QgsRubberBand(self.canvas, lyr.geometryType())
         self._rubber.setWidth(3)
-        req = QgsFeatureRequest().setFilterFids(fids)
-        for f in lyr.getFeatures(req):
-            self._rubber.addGeometry(f.geometry(), lyr)
+        for geom in geoms:
+            self._rubber.addGeometry(geom, lyr)
         QTimer.singleShot(1200, self._clear_flash)
 
     def _clear_flash(self):

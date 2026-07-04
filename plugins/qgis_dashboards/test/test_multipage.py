@@ -15,6 +15,7 @@ from qgis.core import QgsProject
 
 from dashboard_canvas import _proposed_resize, DashboardCanvas
 from bus import DashboardBus
+from elements.base import DashboardElement
 from page_view import clamp_zoom, PageView
 from window import (
     migrate_layout, DashboardWindow, DEFAULT_COLS, DEFAULT_ROWS,
@@ -117,6 +118,79 @@ class BusPageLocalTest(unittest.TestCase):
         self.assertEqual(bus.targets_of("s"), {"b", "c"})
         bus.set_connected("s", "s", True)        # self-edge is ignored
         self.assertNotIn("s", bus.targets_of("s"))
+
+    def test_rewiring_filterless_source_skips_filter_fanout(self):
+        # Toggling a connection for a source with no active filter cannot change
+        # any target's combined filter, so it must NOT emit filtersChanged (which
+        # would re-query every accepting tile). It must still emit
+        # connectionsChanged (the graph changed). This is the perf fix for the
+        # "ticking Connections checkboxes is heavy with many tiles" report.
+        bus = DashboardBus()
+        bus.set_active_page("A")
+        fc = []
+        cc = []
+        bus.filtersChanged.connect(lambda: fc.append(1))
+        bus.connectionsChanged.connect(lambda: cc.append(1))
+
+        bus.set_connected("src", "tgt", True)       # src has no active filter
+        self.assertEqual(fc, [])                    # no expensive fan-out
+        self.assertEqual(len(cc), 1)                # graph still changed
+
+    def test_rewiring_active_source_emits_filter_fanout(self):
+        # A source that DOES contribute a filter changes its targets' combined
+        # filter when rewired, so filtersChanged must fire.
+        bus = DashboardBus()
+        bus.set_active_page("A")
+        bus.set_filter("src", '"a" = 1')
+        fc = []
+        bus.filtersChanged.connect(lambda: fc.append(1))
+
+        bus.set_connected("src", "tgt", True)
+        self.assertEqual(len(fc), 1)
+
+
+class _CountingElement(DashboardElement):
+    """A real element whose refresh() just counts calls (no layer needed)."""
+
+    type_name = "counter"
+    accepts_filter = True
+
+    def __init__(self, bus, config=None):
+        self.refreshes = 0
+        super().__init__(bus, config)
+
+    def refresh(self):
+        self.refreshes += 1
+
+
+class FilterChangeDetectionTest(unittest.TestCase):
+    """An accepting tile re-queries only when its OWN combined filter changes."""
+
+    def _element(self, bus, eid):
+        return _CountingElement(bus, {"id": eid})
+
+    def test_unchanged_combined_filter_skips_refresh(self):
+        bus = DashboardBus()
+        el = self._element(bus, "tgt")
+        bus.set_targets("src", ["tgt"])
+        self.assertEqual(el.refreshes, 0)            # filterless source: no-op
+
+        bus.set_filter("src", '"a" = 1')             # now it actually changes
+        self.assertEqual(el.refreshes, 1)
+
+        bus.filtersChanged.emit()                    # spurious broadcast
+        self.assertEqual(el.refreshes, 1)            # combined unchanged → skip
+
+        bus.set_filter("src", None)                  # cleared → changes again
+        self.assertEqual(el.refreshes, 2)
+
+    def test_unconnected_source_does_not_refresh_tile(self):
+        bus = DashboardBus()
+        el = self._element(bus, "tgt")               # not wired to "src"
+        bus.filtersChanged.emit()                    # settle the change-detector
+        base = el.refreshes
+        bus.set_filter("src", '"a" = 1')             # an unrelated source filters
+        self.assertEqual(el.refreshes, base)         # combined still None → skip
 
 
 class _FakeElement(object):
