@@ -29,7 +29,7 @@ use and tests.
 
 from qgis.PyQt.QtCore import Qt, pyqtSignal
 from qgis.PyQt.QtWidgets import (
-    QDialog, QVBoxLayout, QGroupBox, QCheckBox, QLabel, QScrollArea,
+    QDialog, QVBoxLayout, QHBoxLayout, QGroupBox, QCheckBox, QLabel, QScrollArea,
     QWidget, QDialogButtonBox,
 )
 
@@ -48,6 +48,8 @@ class ConnectionsForm(QWidget):
         # (peer_id, direction) -> QCheckBox, where direction is "out" (this
         # element filters the peer) or "in" (the peer filters this element).
         self._checks = {}
+        # action rows (edges whose target is a map): (src_id, tgt_id, {action:cb})
+        self._action_rows = []
 
         others = [e for e in elements if e.id != element.id]
         out_targets = ([e for e in others if e.accepts_filter]
@@ -87,7 +89,7 @@ class ConnectionsForm(QWidget):
 
         if element.is_filter_source:
             col.addWidget(self._section(
-                "This filters →", out_targets, "out",
+                "This drives →", out_targets, "out",
                 lambda peer: bus.is_connected(element.id, peer.id),
                 "No eligible targets on this page."))
 
@@ -99,6 +101,10 @@ class ConnectionsForm(QWidget):
 
         col.addStretch(1)
 
+    # action columns shown when an edge's target is a map (source→action→target)
+    ACTION_LABELS = (("filter", "Filter"), ("zoom", "Zoom"), ("pan", "Pan"),
+                     ("flash", "Flash"), ("show_popup", "Show pop-up"))
+
     def _section(self, title, peers, direction, is_on, empty_text):
         box = QGroupBox(title)
         lay = QVBoxLayout(box)
@@ -109,19 +115,75 @@ class ConnectionsForm(QWidget):
             hint.setProperty("connHint", True)
             lay.addWidget(hint)
         for peer in peers:
-            cb = QCheckBox(peer.display_name())
+            if self._target_is_map(peer, direction):
+                lay.addWidget(self._action_row(peer, direction))
+            else:
+                cb = QCheckBox(peer.display_name())
+                cb.setCursor(Qt.CursorShape.PointingHandCursor)
+                cb.setChecked(is_on(peer))
+                self._checks[(peer.id, direction)] = cb
+                cb.toggled.connect(
+                    lambda on, pid=peer.id, d=direction:
+                    self._on_toggle(pid, d, on))
+                lay.addWidget(cb)
+        return box
+
+    def _edge_ids(self, peer, direction):
+        """The (source_id, target_id) of the edge this row represents."""
+        if direction == "out":          # this element → peer
+            return self.element.id, peer.id
+        return peer.id, self.element.id  # peer → this element
+
+    def _target_is_map(self, peer, direction):
+        target = peer if direction == "out" else self.element
+        return getattr(target, "type_name", None) == "map"
+
+    def _action_row(self, peer, direction):
+        """A peer name + per-action checkboxes (Filter/Zoom/Pan/Flash/Pop-up).
+
+        Used when the edge's target is a map, so the user picks which ArcGIS
+        actions the source drives on it. The edge exists iff any action is
+        ticked; unticking all removes it.
+        """
+        src, tgt = self._edge_ids(peer, direction)
+        current = (self.bus.edge_actions(src, tgt)
+                   if self.bus.is_connected(src, tgt) else set())
+        box = QWidget()
+        col = QVBoxLayout(box)
+        col.setContentsMargins(0, 0, 0, 0)
+        col.setSpacing(4)
+        name = QLabel(peer.display_name())
+        col.addWidget(name)
+        checks = {}
+        row = QHBoxLayout()
+        row.setSpacing(10)
+        for key, label in self.ACTION_LABELS:
+            cb = QCheckBox(label)
             cb.setCursor(Qt.CursorShape.PointingHandCursor)
-            cb.setChecked(is_on(peer))
-            self._checks[(peer.id, direction)] = cb
+            cb.setChecked(key in current)
+            checks[key] = cb
             cb.toggled.connect(
-                lambda on, pid=peer.id, d=direction: self._on_toggle(pid, d, on))
-            lay.addWidget(cb)
+                lambda _on, s=src, t=tgt, c=checks:
+                self._on_action_toggle(s, t, c))
+            row.addWidget(cb)
+        row.addStretch(1)
+        col.addLayout(row)
+        self._action_rows.append((src, tgt, checks))
         return box
 
     def _on_toggle(self, peer_id, direction, on):
         if self._live:
             self._write_edge(peer_id, direction, on)
         self.changed.emit()
+
+    def _on_action_toggle(self, src, tgt, checks):
+        if self._live:
+            self.bus.set_edge_actions(src, tgt, self._action_set(checks))
+        self.changed.emit()
+
+    @staticmethod
+    def _action_set(checks):
+        return {k for k, cb in checks.items() if cb.isChecked()}
 
     def _write_edge(self, peer_id, direction, on):
         eid = self.element.id
@@ -134,6 +196,8 @@ class ConnectionsForm(QWidget):
         """Write the ticked wiring back onto the bus, edge by edge."""
         for (peer_id, direction), cb in self._checks.items():
             self._write_edge(peer_id, direction, cb.isChecked())
+        for src, tgt, checks in self._action_rows:
+            self.bus.set_edge_actions(src, tgt, self._action_set(checks))
 
 
 class ElementConnectionsDialog(QDialog):
