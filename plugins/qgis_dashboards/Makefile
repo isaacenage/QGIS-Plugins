@@ -27,7 +27,7 @@ PY_FILES = \
 	main_plugin.py window.py bus.py theme.py presets.py icons.py user_fonts.py sidebar.py minimized_bubble.py dashboard_canvas.py page_view.py zoom_fit.py tile_snap.py \
 	add_element_dialog.py element_picker.py settings_dialog.py appearance_dialog.py tile_style_form.py connections_dialog.py side_panel.py form_util.py export_dialog.py \
 	publish_dialog.py submit_payload.py submit_client.py publisher.py \
-	project_io.py recent_store.py start_view.py layout_util.py history.py scripting.py auto_layout.py indicator_expr.py field_select.py
+	project_io.py recent_store.py start_view.py layout_util.py history.py scripting.py auto_layout.py indicator_expr.py field_select.py connection_actions.py
 
 PLUGINNAME = qgis_dashboards
 
