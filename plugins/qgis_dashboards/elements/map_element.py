@@ -33,7 +33,7 @@ bound layer when a connected source (Filter/Legend) filters it.
 
 from html import escape
 
-from qgis.PyQt.QtCore import QTimer, Qt
+from qgis.PyQt.QtCore import QTimer, Qt, QPoint
 from qgis.PyQt.QtGui import QColor
 from qgis.PyQt.QtWidgets import QFrame, QVBoxLayout, QLabel
 from qgis.gui import QgsMapCanvas, QgsMapToolPan, QgsRubberBand
@@ -465,21 +465,26 @@ class MapElement(DashboardElement):
     def _fly_to_filtered(self):
         if not self._interactive:
             return
-        expr = self.bus.combined_filter_for(self.id)
+        # Location actions (zoom/pan/flash/show_popup) are driven only by edges
+        # that declare one — a filter-only edge narrows the layer clone (via
+        # refresh/combined_filter_for) but must NOT move the map.
+        expr = self.bus.location_filter_for(self.id)
         # the map's own extent pushes don't change this expression, so guarding
         # on it prevents a pan -> push -> fly feedback loop.
         if expr == self._last_fly_expr:
             return
         self._last_fly_expr = expr
         if expr is None:
-            # filters cleared: return to mirroring the QGIS canvas extent. The
-            # resulting push is left intact — it reflects the map's honest view
-            # and (unlike a fly-to a selection) does not create a feedback loop.
-            self._sync_extent(force=True)
+            # No location edge is driving the map. Re-mirror the QGIS extent only
+            # on a genuine clear (nothing filtering it either); if a filter-only
+            # edge is active, leave the map where the user left it.
+            if self.bus.combined_filter_for(self.id) is None:
+                self._sync_extent(force=True)
             return
         lyr = self.layer()
         if lyr is None:
             return
+        acts = self.bus.location_actions_for(self.id)
         # One geometry-only pass: we need each matching feature's geometry (for
         # the bbox and the flash) but none of its attributes, so setNoAttributes
         # skips attribute I/O, and we reuse the collected geometries for the flash
@@ -498,12 +503,52 @@ class MapElement(DashboardElement):
                 rect.combineExtentWith(geom.boundingBox())
                 geoms.append(QgsGeometry(geom))
         if not rect.isEmpty():
-            rect.scale(1.5)
-            # this fly is a reaction to a filter, not a user pan: don't push it
-            self._suppress_extent_push = True
-            self.canvas.setExtent(rect)
-            self.canvas.refresh()
-            self._flash(lyr, geoms)
+            moved = False
+            if "zoom" in acts:
+                rect.scale(1.5)
+                # a reaction to a selection, not a user pan: don't push it back out
+                self._suppress_extent_push = True
+                self.canvas.setExtent(rect)
+                moved = True
+            elif "pan" in acts:
+                self._suppress_extent_push = True
+                self.canvas.setCenter(rect.center())
+                moved = True
+            if moved:
+                self.canvas.refresh()
+            if "flash" in acts:
+                self._flash(lyr, geoms)
+        if "show_popup" in acts:
+            self._popup_for_expr(expr, lyr)
+
+    def _popup_for_expr(self, expr, lyr):
+        """Show the identify popup for the first feature matching *expr*.
+
+        Reuses the Use-mode identify machinery, anchored at the feature's
+        centroid (converted to canvas pixels) instead of the cursor.
+        """
+        ctx = QgsExpressionContext()
+        ctx.appendScopes(QgsExpressionContextUtils.globalProjectLayerScopes(lyr))
+        req = QgsFeatureRequest().setFilterExpression(expr)
+        req.setExpressionContext(ctx)
+        feat = next(iter(lyr.getFeatures(req)), None)
+        if feat is None:
+            return
+        geom = feat.geometry()
+        if geom.isEmpty():
+            return
+        transform = self.canvas.getCoordinateTransform()
+        if transform is None:
+            return
+        centroid = geom.centroid().asPoint()
+        dev = transform.transform(centroid)
+        point = QPoint(int(dev.x()), int(dev.y()))
+        names = [f.name() for f in lyr.fields()]
+        values = [None if v == NULL else v for v in feat.attributes()]
+        rows = feature_summary(names, values, limit=12)
+        if self._identify_popup is None:
+            self._identify_popup = IdentifyPopup(self.canvas)
+        self._identify_popup.show_rows(point, rows, self.effective_theme())
 
     # ---- feature action (zoom/flash on a list-row pick) ----
 
