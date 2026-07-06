@@ -940,6 +940,7 @@
 
     // value + optional icon (left / right / above)
     var wrap = el("div", "dash-ind-valuewrap pos-" + (cfg.icon_position || "left"));
+    if (cfg.icon_gap != null) wrap.style.gap = (cfg.icon_gap | 0) + "px";
     if (tile.icon_uri) {
       var img = el("img", "dash-ind-icon");
       img.src = tile.icon_uri;
@@ -1287,6 +1288,7 @@
     var slot = cfg.logo_slot || "left";
     inner.style.flexDirection = (slot === "above" || slot === "below") ? "column" : "row";
     inner.style.height = "100%";
+    if (cfg.logo_gap != null) inner.style.gap = (cfg.logo_gap | 0) + "px";
     var logoFirst = (slot === "left" || slot === "above");
 
     var logo = null;

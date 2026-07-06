@@ -459,7 +459,9 @@ ELEMENT
 
   indicator : value_expression (e.g. "count(1)", 'sum("pop")'),
               reference_expression, top_text, prefix, suffix,
-              decimals (int), no_value_text, icon_path
+              decimals (int), no_value_text,
+              icon_path (a file path or pasted raw <svg> markup),
+              icon_gap (px between the icon and the value)
   chart     : chart_type (see list below), and by shape:
               category  -> category_field, statistic(count|sum|mean), value_field
               series    -> category_field, series_field, statistic, value_field
@@ -477,7 +479,9 @@ ELEMENT
   legend    : (none — mirrors every map layer)
   text      : text, style:{align:left|center|right, heading:bool}
   image     : path, style:{fit:contain|stretch}
-  header    : title, logo_path
+  header    : title,
+              logo_path (a file path or pasted raw <svg> markup),
+              logo_gap (px between the logo and the title)
 
 chart_type values:
   bar barh lollipop lollipop_h dot radial_bar radar line step spline area

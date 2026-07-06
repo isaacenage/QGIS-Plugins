@@ -37,35 +37,77 @@ _LAYERLESS_TYPES = ("text", "image", "header", "legend")
 _IMAGE_FILTER = ("Images (*.png *.jpg *.jpeg *.svg *.gif *.bmp *.webp);;"
                  "All files (*)")
 
+# free-text config keys whose leading/trailing spaces are meaningful and must
+# be preserved verbatim (e.g. a value suffix of " sqm" -> "2912 sqm"). Every
+# other QLineEdit value is stripped as before.
+_RAW_TEXT_KEYS = frozenset({"prefix", "suffix"})
+
 
 class _PathPicker(QWidget):
-    """A read/write path field with a 'Browse…' button (image file chooser)."""
+    """A read/write path field with a 'Browse…' button (image file chooser).
+
+    In *multiline* mode the field is a :class:`QPlainTextEdit` so a long,
+    multi-line SVG snippet can be pasted intact — a single-line ``QLineEdit``
+    collapses the newlines — and the Browse button sits below it.
+    """
 
     changed = pyqtSignal()
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, multiline=False):
         super().__init__(parent)
-        row = QHBoxLayout(self)
-        row.setContentsMargins(0, 0, 0, 0)
-        self._edit = QLineEdit()
-        self._edit.textChanged.connect(self.changed)
+        self._multiline = multiline
         browse = QPushButton("Browse…")
         browse.setProperty("variant", "secondary")
         browse.clicked.connect(self._browse)
-        row.addWidget(self._edit, 1)
-        row.addWidget(browse)
+        if multiline:
+            self._edit = QPlainTextEdit()
+            self._edit.setTabChangesFocus(True)
+            fm = self._edit.fontMetrics()
+            self._edit.setFixedHeight(fm.lineSpacing() * 3 + 14)
+            self._edit.textChanged.connect(self.changed)
+            root = QVBoxLayout(self)
+            root.setContentsMargins(0, 0, 0, 0)
+            root.setSpacing(4)
+            root.addWidget(self._edit)
+            btn_row = QHBoxLayout()
+            btn_row.setContentsMargins(0, 0, 0, 0)
+            btn_row.addStretch(1)
+            btn_row.addWidget(browse)
+            root.addLayout(btn_row)
+        else:
+            self._edit = QLineEdit()
+            self._edit.textChanged.connect(self.changed)
+            row = QHBoxLayout(self)
+            row.setContentsMargins(0, 0, 0, 0)
+            row.addWidget(self._edit, 1)
+            row.addWidget(browse)
+
+    def _get_text(self):
+        return self._edit.toPlainText() if self._multiline else self._edit.text()
+
+    def _set_text(self, value):
+        if self._multiline:
+            self._edit.setPlainText(value or "")
+        else:
+            self._edit.setText(value or "")
 
     def _browse(self):
+        start = self.path()
+        if "<svg" in start.lower():          # don't seed the dialog with markup
+            start = ""
         path, _ = QFileDialog.getOpenFileName(
-            self, "Choose image", self._edit.text(), _IMAGE_FILTER)
+            self, "Choose image", start, _IMAGE_FILTER)
         if path:
-            self._edit.setText(path)
+            self._set_text(path)
 
     def path(self):
-        return self._edit.text().strip()
+        return self._get_text().strip()
 
     def set_path(self, value):
-        self._edit.setText(value or "")
+        self._set_text(value)
+
+    def set_placeholder(self, text):
+        self._edit.setPlaceholderText(text or "")
 
 
 class ElementConfigForm(QWidget):
@@ -228,7 +270,17 @@ class ElementConfigForm(QWidget):
             # the top-level "Title" row is the banner text (data); the banner's
             # fonts/colors/alignment and logo size/position live in Tile
             # Appearance, and the banner height is the generic tile size there.
-            self._add_dyn("logo_path", "Logo image (opt)", _PathPicker())
+            logo_picker = _PathPicker(multiline=True)
+            logo_picker.set_placeholder("File path, or paste <svg …> code")
+            self._add_dyn("logo_path", "Logo image (opt)", logo_picker)
+            # gap between the logo and the title text (px); shown once a logo is
+            # set, mirroring the indicator's icon spacing.
+            self._add_dyn("logo_gap", "Logo spacing (px)", self._spin(0, 200, 12))
+            logo_picker.changed.connect(
+                lambda: self._set_row_visible(self._dyn.get("logo_gap"),
+                                              bool(logo_picker.path())))
+            self._set_row_visible(self._dyn.get("logo_gap"),
+                                  bool(logo_picker.path()))
         elif t == "indicator":
             self._add_agg_rows("statistic", "value_field",
                                "value_expression", "Value")
@@ -239,7 +291,17 @@ class ElementConfigForm(QWidget):
             self._add_dyn("suffix", "Value suffix", QLineEdit(""))
             self._add_dyn("decimals", "Decimal places", self._spin(0, 6, 0))
             self._add_dyn("no_value_text", "No-data text", QLineEdit("No data"))
-            self._add_dyn("icon_path", "Icon image (opt)", _PathPicker())
+            icon_picker = _PathPicker(multiline=True)
+            icon_picker.set_placeholder("File path, or paste <svg …> code")
+            self._add_dyn("icon_path", "Icon image (opt)", icon_picker)
+            # gap between the icon and the value (px); only relevant once an
+            # icon is set, so the row appears when a path/SVG is present.
+            self._add_dyn("icon_gap", "Icon spacing (px)", self._spin(0, 200, 10))
+            icon_picker.changed.connect(
+                lambda: self._set_row_visible(self._dyn.get("icon_gap"),
+                                              bool(icon_picker.path())))
+            self._set_row_visible(self._dyn.get("icon_gap"),
+                                  bool(icon_picker.path()))
             self._sync_agg_rows("statistic", "value_field", "value_expression")
             self._sync_agg_rows("reference_statistic", "reference_field",
                                 "reference_expression")
@@ -507,6 +569,15 @@ class ElementConfigForm(QWidget):
             elif isinstance(w, QPlainTextEdit):
                 out[key] = w.toPlainText()
             elif isinstance(w, QLineEdit):
+                if key in _RAW_TEXT_KEYS:
+                    # keep the spaces the user typed (e.g. a " sqm" suffix), so
+                    # only an entirely empty field drops the key.
+                    raw = w.text()
+                    if raw:
+                        out[key] = raw
+                    elif not drop_empty:
+                        out[key] = ""
+                    continue
                 val = w.text().strip()
                 if val:
                     out[key] = ([s.strip() for s in val.split(",")]

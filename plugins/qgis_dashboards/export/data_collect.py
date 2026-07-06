@@ -85,8 +85,18 @@ def base_pass_indices(layer, base_filter, fid_index):
 
 
 def image_data_uri(path):
-    """Return a base64 ``data:`` URI for *path*, or ``None`` if unreadable."""
-    if not path or not os.path.isfile(path):
+    """Return a base64 ``data:`` URI for *path*, or ``None`` if unreadable.
+
+    *path* may also be **raw SVG markup** pasted into an icon field, which is
+    embedded directly as an ``image/svg+xml`` data URI.
+    """
+    if not path:
+        return None
+    if isinstance(path, str) and "<svg" in path.lower():
+        raw = path.strip().encode("utf-8")
+        return "data:image/svg+xml;base64,{}".format(
+            base64.b64encode(raw).decode("ascii"))
+    if not os.path.isfile(path):
         return None
     mime, _ = mimetypes.guess_type(path)
     mime = mime or "application/octet-stream"

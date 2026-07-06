@@ -13,22 +13,16 @@ only renders its title + logo. ``anchor``/``thickness`` are no longer used (a
 tile has free geometry).
 
 ``config`` keys: ``title``, ``font_family``, ``font_size``, ``align``,
-``logo_path``, ``logo_slot``, ``logo_size``.
+``logo_path`` (a file path *or* pasted raw ``<svg>`` markup), ``logo_slot``,
+``logo_size``, ``logo_gap`` (px between the logo and the title).
 """
 
-import os
-
 from qgis.PyQt.QtCore import Qt
-from qgis.PyQt.QtGui import QPixmap, QImage, QPainter
 from qgis.PyQt.QtWidgets import QLabel, QBoxLayout
 
 from .base import DashboardElement
 from .header_layout import inner_box_direction
-
-try:
-    from qgis.PyQt.QtSvg import QSvgRenderer
-except ImportError:          # QtSvg is optional on some builds
-    QSvgRenderer = None
+from .media import icon_pixmap
 
 _DIRECTION = {
     "h": QBoxLayout.Direction.LeftToRight,
@@ -68,7 +62,8 @@ class HeaderElement(DashboardElement):
     def refresh(self):
         cfg = self.config
         size = int(self.style_get("logo_size", 40) or 40)
-        pm = self._logo_pixmap((cfg.get("logo_path") or "").strip(), size)
+        raw = (cfg.get("logo_path") or "").strip()
+        pm = icon_pixmap(raw, size) if raw else None
         if pm is not None:
             self._logo.setPixmap(pm)
             self._logo.show()
@@ -76,6 +71,7 @@ class HeaderElement(DashboardElement):
             self._logo.clear()
             self._logo.hide()
         self._title.setText(cfg.get("title", "") or "")
+        self._inner.setSpacing(int(cfg.get("logo_gap", 12) or 0))
         self._rebuild_inner(self.style_get("logo_slot", "left"))
         self._restyle()
 
@@ -99,26 +95,4 @@ class HeaderElement(DashboardElement):
         self.apply_text_role(self._title, "title", color=th.text,
                              font=th.font_family, size=22, weight=700,
                              align="left")
-
-    # ---- logo loading (raster + SVG; static is enough for a brand mark) ----
-
-    def _logo_pixmap(self, path, size):
-        if not path or not os.path.isfile(path):
-            return None
-        ext = os.path.splitext(path)[1].lower()
-        if ext == ".svg" and QSvgRenderer is not None:
-            renderer = QSvgRenderer(path)
-            if not renderer.isValid():
-                return None
-            img = QImage(size, size, QImage.Format.Format_ARGB32)
-            img.fill(Qt.GlobalColor.transparent)
-            painter = QPainter(img)
-            renderer.render(painter)
-            painter.end()
-            return QPixmap.fromImage(img)
-        pm = QPixmap(path)
-        if pm.isNull():
-            return None
-        return pm.scaled(size, size, Qt.AspectRatioMode.KeepAspectRatio,
-                         Qt.TransformationMode.SmoothTransformation)
 

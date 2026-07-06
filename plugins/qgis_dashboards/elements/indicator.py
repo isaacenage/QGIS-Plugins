@@ -95,23 +95,43 @@ class IndicatorElement(DashboardElement):
                              font=th.font_family, size=th.font_size, weight=400,
                              force_color=force)
 
-    def _rebuild_value_host(self, position, has_icon):
+    def _rebuild_value_host(self, position, has_icon, gap):
+        """Lay out the icon + value, honoring the configured *gap* (px).
+
+        The grid columns must not stretch, or the two cells split the whole
+        tile width and drift far apart (``<icon>        <value>``). We keep the
+        icon/value pair adjacent — the gap between them is exactly the grid
+        spacing — and center the pair with stretchable spacer columns.
+        """
+        af = Qt.AlignmentFlag
         self._vgrid.removeWidget(self.icon)
         self._vgrid.removeWidget(self.value)
+        # clear any spacer stretch a previous position left behind
+        for c in range(4):
+            self._vgrid.setColumnStretch(c, 0)
+        self._vgrid.setHorizontalSpacing(gap)
+        self._vgrid.setVerticalSpacing(gap)
         if not has_icon:
             self.icon.hide()
-            self._vgrid.addWidget(self.value, 0, 0, Qt.AlignmentFlag.AlignCenter)
+            self._vgrid.addWidget(self.value, 0, 0, af.AlignCenter)
             return
         self.icon.show()
         if position == "top":
-            self._vgrid.addWidget(self.icon, 0, 0, Qt.AlignmentFlag.AlignCenter)
-            self._vgrid.addWidget(self.value, 1, 0, Qt.AlignmentFlag.AlignCenter)
-        elif position == "right":
-            self._vgrid.addWidget(self.value, 0, 0, Qt.AlignmentFlag.AlignCenter)
-            self._vgrid.addWidget(self.icon, 0, 1, Qt.AlignmentFlag.AlignCenter)
+            # single column stretches -> AlignHCenter centers each; the gap is
+            # the vertical spacing between the two rows.
+            self._vgrid.addWidget(self.icon, 0, 0, af.AlignHCenter | af.AlignBottom)
+            self._vgrid.addWidget(self.value, 1, 0, af.AlignHCenter | af.AlignTop)
+            return
+        # side-by-side: spacer columns 0 and 3 absorb the extra width so the
+        # icon/value pair stays together and centered.
+        self._vgrid.setColumnStretch(0, 1)
+        self._vgrid.setColumnStretch(3, 1)
+        if position == "right":
+            self._vgrid.addWidget(self.value, 0, 1, af.AlignRight | af.AlignVCenter)
+            self._vgrid.addWidget(self.icon, 0, 2, af.AlignLeft | af.AlignVCenter)
         else:   # left (default)
-            self._vgrid.addWidget(self.icon, 0, 0, Qt.AlignmentFlag.AlignCenter)
-            self._vgrid.addWidget(self.value, 0, 1, Qt.AlignmentFlag.AlignCenter)
+            self._vgrid.addWidget(self.icon, 0, 1, af.AlignRight | af.AlignVCenter)
+            self._vgrid.addWidget(self.value, 0, 2, af.AlignLeft | af.AlignVCenter)
 
     # ---- data ----
 
@@ -126,7 +146,9 @@ class IndicatorElement(DashboardElement):
         has_icon = pixmap is not None
         if has_icon:
             self.icon.setPixmap(pixmap)
-        self._rebuild_value_host(self.style_get("icon_position", "left"), has_icon)
+        gap = int(self.config.get("icon_gap", 10) or 0)
+        self._rebuild_value_host(
+            self.style_get("icon_position", "left"), has_icon, gap)
 
         # animated value (animation type + duration are style)
         self.value.set_options(
