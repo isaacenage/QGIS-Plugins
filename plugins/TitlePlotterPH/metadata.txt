@@ -11,7 +11,7 @@ email=isaacenagework@gmail.com
 
 homepage=https://isaacenage.xyz/Tools/titleplotterph
 tracker=https://isaacenage.xyz/Tools/titleplotterph
-repository=https://github.com/isaacenage/TitlePlotterPH
+repository=https://github.com/isaacenage/QGIS-Plugins
 category=Vector
 
 # Required non-standard libraries

@@ -14,8 +14,8 @@ email=isaacenagework@gmail.com
 
 about=An interactive dashboard builder for QGIS. Add data-driven elements (indicator, serial/bar chart, pie/donut chart, list) bound to vector layers via the QGIS expression engine, plus a live map element and a category selector that cross-filters every other element. Layout and configuration persist inside the .qgz project file.
 
-tracker=http://bugs
-repository=http://repo
+tracker=https://github.com/isaacenage/QGIS-Plugins/issues
+repository=https://github.com/isaacenage/QGIS-Plugins
 # End of mandatory metadata
 
 # Recommended items:
@@ -27,7 +27,7 @@ hasProcessingProvider=no
 # Tags are comma separated with spaces allowed
 tags=dashboard,charts,analytics,indicator,selector,visualization
 
-homepage=http://homepage
+homepage=https://github.com/isaacenage/QGIS-Plugins
 category=Plugins
 icon=icon.png
 # experimental flag
