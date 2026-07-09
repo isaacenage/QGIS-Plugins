@@ -1,43 +1,75 @@
 ---
-name: qgis-plugins-site-design
-description: Use when building, redesigning, restyling, or reviewing any page or component of the QGIS Plugins website — the hub at "/" (app/page.tsx) or a plugin section like /qdashboards — including new pages, hero/section/card work, buttons, headers, footers, or any change to app/ and components/ that touches visual style.
+name: design-system-typography-nerd
+description: Creates implementation-ready design-system guidance with tokens, component behavior, and accessibility standards. Use when creating or updating UI rules, component specifications, or design-system documentation.
 ---
 
-# QGIS Plugins Site Design
+<!-- TYPEUI_SH_MANAGED_START -->
 
-## Overview
+# Typography Nerd
 
-The QGIS Plugins site is a token-driven design system grounded in the plugin's own identity: the gradient parallelogram logo (blue → amber → green), accent blue `#2b7de9`, soft hairlines, light neutral chrome. The dashboard **tile** is the structural unit; the **cross-filter dim** ("dim the unrelated") is the signature interaction.
+## Mission
+Deliver implementation-ready design-system guidance for Typography Nerd that can be applied consistently across e-commerce storefront interfaces.
 
-**All tokens, scales, and component rules live in `DESIGN.md` in this folder. Read it before writing any UI code.** The tokens are implemented in `app/globals.css` (CSS custom properties + Tailwind `@theme inline` + `@layer components`).
+## Brand
+- Product/brand: Typography Nerd
+- URL: https://www.typographynerd.de/?ref=bestwebsite.gallery
+- Audience: online shoppers and consumers
+- Product surface: e-commerce storefront
 
-## Workflow
+## Style Foundations
+- Visual style: structured, accessible, implementation-first
+- Main font style: `font.family.primary=NeurialGrotesk-Bold`, `font.family.stack=NeurialGrotesk-Bold`, `font.size.base=13px`, `font.weight.base=400`, `font.lineHeight.base=18.2px`
+- Typography scale: `font.size.xs=10px`, `font.size.sm=13px`, `font.size.md=16px`, `font.size.lg=23px`, `font.size.xl=25px`, `font.size.2xl=34px`, `font.size.3xl=90px`
+- Color palette: `color.text.primary=#232323`, `color.text.secondary=#ff5570`, `color.surface.base=#000000`, `color.text.inverse=#0000ee`, `color.surface.muted=#ffffff`
+- Spacing scale: `space.1=10px`, `space.2=11.3px`, `space.3=12.38px`, `space.4=15px`, `space.5=20px`, `space.6=20.39px`, `space.7=30px`, `space.8=35px`
+- Radius/shadow/motion tokens: manual token definitions required
 
-1. Read `DESIGN.md` (same folder) for tokens, type roles, and component rules.
-2. Compose from the existing primitives before inventing new ones: `.tile`, `.eyebrow`, `.display`, `.stat`, `.btn-primary` / `.btn-ghost`, `.crossfilter`, and the `Section` component (eyebrow → display heading → muted lead).
-3. Style only with semantic Tailwind tokens (`ink`, `muted`, `faint`, `accent`, `accent-ink`, `line`, `line-strong`, `surface`, `paper`, `cat-blue|amber|green`) — never raw hex, never new fonts.
-4. New tokens or component classes go into `app/globals.css`, then get used — no inline one-offs.
-5. Verify the quality floor: visible `:focus-visible`, WCAG 2.2 AA contrast, `prefers-reduced-motion` respected, all interactive states defined.
+## Accessibility
+- Target: WCAG 2.2 AA
+- Keyboard-first interactions required.
+- Focus-visible rules required.
+- Contrast constraints required.
 
-## Quick Reference
+## Writing Tone
+concise, confident, implementation-focused
 
-| Element | Rule |
-|---|---|
-| Headings | `.display` (Space Grotesk); accent-highlight a key phrase with `text-accent` |
-| Kickers | `.eyebrow` (JetBrains Mono, gradient dash) above every section title |
-| Body | Inter via body default; leads `text-lg leading-relaxed text-muted` |
-| Numbers/domains | `.stat` (mono, tabular-nums) |
-| Cards | `.tile` (surface, hairline, 18px radius, soft shadow); hover `-translate-y-0.5` |
-| Buttons | Pills only: `.btn-primary` (accent) / `.btn-ghost` (hairline outline) |
-| Borders | Hairlines only (`line`, `line-strong`) — never dark/heavy outlines |
-| Emphasis | Soft fills (`bg-accent/8`, `bg-surface/40`), not outlines |
-| Selection/filter UI | Cross-filter language: active stays saturated, siblings dim (opacity 0.32) |
-| Layout | `max-w-6xl px-5`, sections `py-20`, sticky `h-16` blurred header |
+## Rules: Do
+- Use semantic tokens, not raw hex values in component guidance.
+- Every component must define required states: default, hover, focus-visible, active, disabled, loading, error.
+- Responsive behavior and edge-case handling should be specified for every component family.
+- Accessibility acceptance criteria must be testable in implementation.
 
-## Common Mistakes
+## Rules: Don't
+- Do not allow low-contrast text or hidden focus indicators.
+- Do not introduce one-off spacing or typography exceptions.
+- Do not use ambiguous labels or non-descriptive actions.
 
-- Raw hex or arbitrary colors instead of the semantic tokens.
-- Dark borders or heavy shadows — the system is hairline + one soft tile shadow.
-- Skipping the eyebrow/display/lead section skeleton, which makes pages read off-brand.
-- Adding a dark mode, new font, or one-off spacing instead of extending `globals.css`.
-- Marketing-fluff copy — the voice is plain, confident, maker-first ("Free & open-source · built for QGIS").
+## Guideline Authoring Workflow
+1. Restate design intent in one sentence.
+2. Define foundations and tokens.
+3. Define component anatomy, variants, and interactions.
+4. Add accessibility acceptance criteria.
+5. Add anti-patterns and migration notes.
+6. End with QA checklist.
+
+## Required Output Structure
+- Context and goals
+- Design tokens and foundations
+- Component-level rules (anatomy, variants, states, responsive behavior)
+- Accessibility requirements and testable acceptance criteria
+- Content and tone standards with examples
+- Anti-patterns and prohibited implementations
+- QA checklist
+
+## Component Rule Expectations
+- Include keyboard, pointer, and touch behavior.
+- Include spacing and typography token requirements.
+- Include long-content, overflow, and empty-state handling.
+
+## Quality Gates
+- Every non-negotiable rule must use "must".
+- Every recommendation should use "should".
+- Every accessibility rule must be testable in implementation.
+- Prefer system consistency over local visual exceptions.
+
+<!-- TYPEUI_SH_MANAGED_END -->

@@ -31,3 +31,5 @@ next-env.d.ts
 .claude/
 docs/superpowers/
 CLAUDE.md
+.vercel
+.env*
