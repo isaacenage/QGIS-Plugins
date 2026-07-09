@@ -1,0 +1,30 @@
+[general]
+name=Title Plotter PH
+qgisMinimumVersion=3.22
+qgisMaximumVersion=4.99
+description=Plugin for plotting Philippine land titles from technical descriptions
+about=Title Plotter helps non-surveyors and professionals plot lots using bearing and distance, based on tie points. Designed to work with Philippine titles. Requires no GIS background.
+
+version=2.1.0
+author=Isaac Enage
+email=isaacenagework@gmail.com
+
+homepage=https://isaacenage.xyz/Tools/titleplotterph
+tracker=https://isaacenage.xyz/Tools/titleplotterph
+repository=https://github.com/isaacenage/TitlePlotterPH
+category=Vector
+
+# Required non-standard libraries
+python_requirements=pandas,shapely
+
+# Optional but recommended
+experimental=False
+
+# Accepted license strings: GPL-2.0, GPL-3.0, etc.
+license=GPL-3.0
+
+# Additional metadata
+tags=philippine,land,title,plotter,bearing,distance,polygon,survey,qgis,geometry,llm,ai
+hasProcessingProvider=no
+icon=icons/icon.png
+server=False
