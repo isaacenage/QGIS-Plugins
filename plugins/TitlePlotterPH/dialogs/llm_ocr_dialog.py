@@ -18,6 +18,7 @@ import json
 import base64
 import urllib.request
 import urllib.error
+import urllib.parse
 import time
 
 try:
@@ -28,6 +29,20 @@ except ImportError:
 # Load the UI file
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(os.path.dirname(__file__)), 'forms', 'TCT_OCR_Dialog.ui'))
+
+
+def open_https_request(request, timeout):
+    """Open a urllib request, permitting only the https scheme.
+
+    urllib.request.urlopen would also follow file:// or other custom
+    schemes; every LLM API endpoint this dialog talks to is https, so
+    anything else is rejected before a connection is attempted.
+    """
+    scheme = urllib.parse.urlparse(request.full_url).scheme.lower()
+    if scheme != "https":
+        raise ValueError(
+            f"Refusing to open URL with scheme '{scheme}'; only https is allowed.")
+    return urllib.request.urlopen(request, timeout=timeout)
 
 
 
@@ -849,7 +864,7 @@ CRITICAL:
             request = urllib.request.Request(url, data=data, headers=headers, method='POST')
 
             print(f"Sending request to Gemini...")
-            with urllib.request.urlopen(request, timeout=120) as response:
+            with open_https_request(request, timeout=120) as response:
                 result = json.loads(response.read().decode('utf-8'))
                 
                 if 'candidates' in result and len(result['candidates']) > 0:
@@ -906,7 +921,7 @@ CRITICAL:
 
             print(f"Sending request to {self.current_provider}...")
             # Longer timeout for vision analysis
-            with urllib.request.urlopen(request, timeout=120) as response:
+            with open_https_request(request, timeout=120) as response:
                 result = json.loads(response.read().decode('utf-8'))
                 
                 if 'choices' in result and len(result['choices']) > 0:

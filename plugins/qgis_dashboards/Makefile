@@ -33,7 +33,7 @@ PLUGINNAME = qgis_dashboards
 
 UI_FILES =
 
-EXTRAS = metadata.txt icon.png
+EXTRAS = metadata.txt icon.png LICENSE
 
 EXTRA_DIRS = elements export
 

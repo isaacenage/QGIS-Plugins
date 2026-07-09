@@ -7,12 +7,12 @@
 name=QGIS Dashboard
 qgisMinimumVersion=3.22
 qgisMaximumVersion=4.99
-description=Build ArcGIS-Dashboards-style interactive dashboards from your QGIS project layers — indicators, charts, lists, a live map element, and cross-filtering selectors all wired together through a signal bus.
+description=Build ArcGIS-Dashboards-style interactive dashboards from your QGIS project layers — indicators, charts, lists, a live map element, and cross-filtering selectors all wired together through a signal bus. By Isaac Enage (byZenterra).
 version=0.1
 author=Isaac Enage
 email=isaacenagework@gmail.com
 
-about=An interactive dashboard builder for QGIS. Add data-driven elements (indicator, serial/bar chart, pie/donut chart, list) bound to vector layers via the QGIS expression engine, plus a live map element and a category selector that cross-filters every other element. Layout and configuration persist inside the .qgz project file.
+about=QGIS Dashboard by Isaac Enage is an interactive dashboard builder for QGIS. Add data-driven elements (indicator, serial/bar chart, pie/donut chart, list) bound to vector layers via the QGIS expression engine, plus a live map element and a category selector that cross-filters every other element. Layout and configuration persist inside the .qgz project file. Developed and maintained by Isaac Enage of byZenterra. Guides, the dashboard gallery, and more QGIS plugins by Isaac Enage are at https://qgis.byzenterra.org/qdashboards
 
 tracker=https://github.com/isaacenage/QGIS-Plugins/issues
 repository=https://github.com/isaacenage/QGIS-Plugins
@@ -25,11 +25,12 @@ hasProcessingProvider=no
 # changelog=
 
 # Tags are comma separated with spaces allowed
-tags=dashboard,charts,analytics,indicator,selector,visualization
+tags=dashboard,charts,analytics,indicator,selector,visualization,isaac enage,byzenterra
 
-homepage=https://github.com/isaacenage/QGIS-Plugins
+homepage=https://qgis.byzenterra.org/qdashboards
 category=Plugins
 icon=icon.png
+license=GPL-3.0
 # experimental flag
 experimental=False
 
