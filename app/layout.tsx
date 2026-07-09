@@ -1,18 +1,17 @@
 import type { Metadata } from "next";
-import { Space_Grotesk, Inter, JetBrains_Mono } from "next/font/google";
+import { Poppins, JetBrains_Mono } from "next/font/google";
 import { HUB } from "@/lib/site";
 import "./globals.css";
 
-const spaceGrotesk = Space_Grotesk({
+// The site's single face: a bold geometric grotesque (the editorial reference's
+// Campton stand-in). Headings lean on 600/700; body runs at 400.
+const poppins = Poppins({
   subsets: ["latin"],
-  variable: "--font-space-grotesk",
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-poppins",
   display: "swap",
 });
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-  display: "swap",
-});
+// Mono is reserved for real code (the guide's snippets) — never for chrome.
 const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-jetbrains-mono",
@@ -28,7 +27,7 @@ export const metadata: Metadata = {
     template: `%s · ${HUB.name}`,
   },
   description:
-    "A growing collection of free, open-source QGIS plugins by Isaac Enage — practical tools that extend the desktop GIS you already use.",
+    "A growing collection of free, open-source QGIS plugins from byZenterra.org — a DTI-registered GIS consultancy in the Philippines owned by Isaac Enage. Practical tools that extend the desktop GIS you already use.",
   metadataBase: new URL(`https://${HUB.domain}`),
 };
 
@@ -37,9 +36,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body
-        className={`${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable}`}
-      >
+      <body className={`${poppins.variable} ${jetbrainsMono.variable}`}>
         {children}
       </body>
     </html>

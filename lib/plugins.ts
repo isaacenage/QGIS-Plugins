@@ -1,7 +1,8 @@
-// The catalog of plugins the hub lists. The repo is the home for every QGIS
-// plugin Isaac Enage ships; each entry that is `status: "live"` links to its
-// own section under the site (e.g. /qdashboards). Add a new plugin by adding a
-// row here and creating its app/<slug>/ route segment.
+// The catalog of plugins the hub lists. This site is the home for every QGIS
+// plugin byZenterra.org ships; each entry that is `status: "live"` links to
+// its own section under the site (e.g. /qdashboards). Add a new plugin by
+// adding a row here and creating its app/<slug>/ route segment — every
+// "N plugins" figure on the site derives from this array's length.
 
 export interface Plugin {
   slug: string; // route segment, e.g. "qdashboards"
@@ -32,11 +33,16 @@ export const PLUGINS: Plugin[] = [
       "Plot Philippine land titles from technical descriptions — no GIS background needed.",
     pitch:
       "Turn the bearing-and-distance technical descriptions on Philippine TCTs and OCTs into accurate parcel geometry, right inside QGIS. Snap to a built-in database of official tie points, preview the lot live, check the closing error, and even let AI OCR read the metes-and-bounds straight off a title image.",
-    href: "https://isaacenage.xyz/Tools/titleplotterph",
-    features: ["Tie-point database", "AI OCR", "PRS92 / WGS84", "PDF export"],
+    href: "/titleplotterph",
+    features: ["85,000+ tie points", "AI OCR", "PRS92 / WGS84", "Offline cache"],
     status: "live",
   },
 ];
+
+/** How many plugins the hub currently ships (live entries only). */
+export function pluginCount(): number {
+  return PLUGINS.filter((p) => p.status === "live").length;
+}
 
 /** The one plugin to spotlight on the hub (first live entry). */
 export function featuredPlugin(): Plugin | undefined {

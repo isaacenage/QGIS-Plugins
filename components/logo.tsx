@@ -89,6 +89,18 @@ export function Wordmark({ size = 32 }: { size?: number }) {
   );
 }
 
+// The Title Plotter PH section wordmark — same gradient mark, its own name.
+export function TpphWordmark({ size = 32 }: { size?: number }) {
+  return (
+    <span className="inline-flex items-center gap-2.5">
+      <Logo size={size} />
+      <span className="display text-[1.15rem] font-semibold tracking-tight">
+        Title<span className="text-accent"> Plotter PH</span>
+      </span>
+    </span>
+  );
+}
+
 // The umbrella wordmark for the root hub — same gradient mark, "QGIS Plugins".
 export function HubWordmark({ size = 32 }: { size?: number }) {
   return (

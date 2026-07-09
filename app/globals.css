@@ -1,33 +1,34 @@
 @import "tailwindcss";
 
 /*
-  QGIS Dashboard — site design system.
+  QGIS Plugins — site design system (editorial magazine skin, site-wide).
 
-  Grounded in the plugin's own identity: the gradient parallelogram logo
-  (blue → amber → green), accent blue #2B7DE9, soft hairline #E2E6EC, light
-  neutral chrome. The dashboard *tile* is the structural unit; the signature is
-  the cross-filter interaction ("dim the unrelated").
+  Derived from the Typography-Nerd reference: pure white paper, near-black ink,
+  watermelon-coral accent, a bold geometric grotesque (Poppins) for everything,
+  hairline rules, and ZERO border radius — every shape is a hard rectangle.
+  Flat: no shadows. The coral underline is the labeling device; the long arrow
+  is the CTA device.
 */
 
 :root {
-  --paper: #fafbfc;
+  --paper: #ffffff;
   --surface: #ffffff;
-  --ink: #1a1f26;
-  --muted: #55606d;
-  --faint: #8a93a0;
-  --accent: #2b7de9;
-  --accent-ink: #1f5fb4;
-  --line: #e2e6ec;
-  --line-strong: #d4dae2;
+  --ink: #1c1c21;
+  --muted: #55555d;
+  --faint: #97979f;
+  --accent: #ef4b6c;
+  --accent-ink: #c9184a;
+  --line: #e6e6e9;
+  --line-strong: #d5d5da;
 
-  /* the logo's gradient ends — the categorical signature set */
-  --cat-blue: #5e97d0;
-  --cat-amber: #e89a5c;
-  --cat-green: #6fb890;
+  /* the art's categorical trio — gray / light pink / near-black, like the photo */
+  --cat-blue: #a3a3ad;
+  --cat-amber: #f27d92;
+  --cat-green: #2b2b33;
 
-  --radius: 12px;
-  --radius-lg: 18px;
-  --shadow-tile: 0 1px 2px rgba(26, 31, 38, 0.04), 0 8px 24px rgba(26, 31, 38, 0.05);
+  --radius: 0px;
+  --radius-lg: 0px;
+  --shadow-tile: none;
 }
 
 @theme inline {
@@ -44,8 +45,8 @@
   --color-cat-amber: var(--cat-amber);
   --color-cat-green: var(--cat-green);
 
-  --font-display: var(--font-space-grotesk), "Century Gothic", "Questrial", system-ui, sans-serif;
-  --font-sans: var(--font-inter), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: var(--font-poppins), "Century Gothic", system-ui, sans-serif;
+  --font-sans: var(--font-poppins), system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: var(--font-jetbrains-mono), ui-monospace, "SFMono-Regular", monospace;
 
   --radius-tile: var(--radius);
@@ -54,6 +55,14 @@
 
 * {
   border-color: var(--line);
+}
+
+/* The reference has no rounded corners anywhere — kill every radius, including
+   utilities (rounded-full pills, arbitrary values) that predate this skin. */
+*,
+*::before,
+*::after {
+  border-radius: 0 !important;
 }
 
 html {
@@ -73,49 +82,40 @@ body {
 }
 
 /* Visible keyboard focus everywhere (quality floor). */
-:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-  border-radius: 4px;
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
 }
 
 @layer components {
-  /* The dashboard tile — the site's structural unit. */
+  /* The tile — a flat white rectangle with a hairline edge. */
   .tile {
     background: var(--surface);
     border: 1px solid var(--line);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-tile);
   }
 
+  /* Section kicker — the small coral label with a coral underline, exactly the
+     photo's category tags ("Typografie", "Praxis"). Sentence case, sans. */
   .eyebrow {
-    font-family: var(--font-mono);
-    font-size: 0.72rem;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: var(--muted);
-    display: inline-flex;
-    align-items: center;
-    gap: 0.55rem;
+    display: inline-block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--accent-ink);
+    padding-bottom: 0.3rem;
+    border-bottom: 1px solid var(--accent);
   }
 
-  .eyebrow::before {
-    content: "";
-    width: 1.6rem;
-    height: 2px;
-    background: linear-gradient(90deg, var(--cat-blue), var(--cat-amber), var(--cat-green));
-    border-radius: 2px;
-  }
-
+  /* Headings — the bold geometric grotesque, tight and heavy like the photo. */
   .display {
     font-family: var(--font-display);
-    letter-spacing: -0.02em;
-    line-height: 1.04;
-    font-weight: 600;
+    letter-spacing: -0.015em;
+    line-height: 1.08;
+    font-weight: 700;
   }
 
   .stat {
-    font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
   }
 
@@ -124,17 +124,13 @@ body {
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    border-radius: 999px;
     font-weight: 600;
     font-size: 0.95rem;
-    padding: 0.7rem 1.3rem;
-    transition: transform 0.12s ease, background 0.15s ease, border-color 0.15s ease;
-  }
-  .btn:active {
-    transform: translateY(1px);
+    padding: 0.7rem 1.4rem;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
   }
   .btn-primary {
-    background: var(--accent);
+    background: var(--ink);
     color: #fff;
   }
   .btn-primary:hover {
@@ -158,6 +154,56 @@ body {
   }
   .crossfilter * {
     transition: opacity 0.28s ease, filter 0.28s ease, fill 0.28s ease;
+  }
+
+  /* Card/box kicker — same device as .eyebrow: coral text over a coral rule. */
+  .tag {
+    display: inline-block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--accent-ink);
+    padding-bottom: 0.35rem;
+    border-bottom: 1px solid var(--accent);
+  }
+
+  /* Long-arrow text link — the editorial CTA ("Explore the plugins ⟶").
+     Ink like the photo's card arrows; coral on hover. The glyph slides when
+     the link (or its .group card) is hovered. */
+  .arrow-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--ink);
+    transition: color 0.15s ease;
+  }
+  .arrow-link:hover {
+    color: var(--accent-ink);
+  }
+  .arrow-link .arrow-glyph {
+    transition: transform 0.15s ease;
+  }
+  .arrow-link:hover .arrow-glyph,
+  .group:hover .arrow-link .arrow-glyph {
+    transform: translateX(4px);
+  }
+
+  /* Footer sitemap link — small ink text on a thin underline, per the photo. */
+  .sitemap-link {
+    font-size: 0.83rem;
+    font-weight: 500;
+    color: var(--ink);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 4px;
+    text-decoration-color: var(--ink);
+    transition: color 0.15s ease, text-decoration-color 0.15s ease;
+  }
+  .sitemap-link:hover {
+    color: var(--accent-ink);
+    text-decoration-color: var(--accent);
   }
 }
 

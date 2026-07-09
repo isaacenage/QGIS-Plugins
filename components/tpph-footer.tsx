@@ -1,56 +1,56 @@
 import Link from "next/link";
 import { Logo } from "./logo";
-import { SITE, withBase } from "@/lib/site";
+import { TPPH } from "@/lib/site";
 
-// The QGIS Dashboard section footer — the same sitemap-wall language as the
-// hub footer: coral spaced-caps headers, small underlined ink links, flat.
-export function SiteFooter() {
+// The Title Plotter PH section footer — the same sitemap-wall language as the
+// hub and dashboard footers: coral spaced-caps headers, small underlined ink
+// links, flat.
+export function TpphFooter() {
   return (
     <footer className="border-t border-line bg-paper">
       <div className="mx-auto grid max-w-6xl gap-x-8 gap-y-10 px-5 py-14 sm:grid-cols-2 md:grid-cols-4">
         <div className="sm:col-span-2 md:col-span-1">
           <div className="flex items-center gap-2.5">
             <Logo size={28} />
-            <span className="display text-base">QGIS Dashboard</span>
+            <span className="display text-base">Title Plotter PH</span>
           </div>
           <p className="mt-3 max-w-xs text-sm leading-relaxed text-muted">
-            {SITE.tagline}
+            {TPPH.tagline}
           </p>
         </div>
 
         <FooterCol
           title="Product"
           links={[
-            { href: withBase("/#features"), label: "Features" },
-            { href: withBase("/#cross-filter"), label: "Cross-filtering" },
-            { href: withBase("/#themes"), label: "Themes" },
-            { href: withBase("/gallery"), label: "Gallery" },
+            { href: "/titleplotterph#features", label: "Features" },
+            { href: "/titleplotterph#how", label: "How it works" },
+            { href: "/titleplotterph#install", label: "Install" },
           ]}
         />
         <FooterCol
-          title="Learn"
+          title="Plugins"
           links={[
-            { href: withBase("/guide#install"), label: "Install" },
-            { href: withBase("/guide#build"), label: "Build a dashboard" },
-            { href: withBase("/guide#publish"), label: "Publish" },
+            { href: "/", label: "All plugins" },
+            { href: "/qdashboards", label: "QGIS Dashboard" },
           ]}
         />
         <FooterCol
           title="Project"
           external
           links={[
-            { href: SITE.repo, label: "Source on GitHub" },
-            { href: SITE.issues, label: "Report an issue" },
-            { href: `mailto:${SITE.authorEmail}`, label: "Contact" },
+            { href: TPPH.repo, label: "Source on GitHub" },
+            { href: TPPH.issues, label: "Report an issue" },
+            { href: `mailto:${TPPH.authorEmail}`, label: "Contact" },
           ]}
         />
       </div>
       <div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 pb-8 sm:flex-row sm:items-center sm:justify-between">
         <span className="text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-ink">
-          Built by {SITE.author} — free &amp; open-source
+          Built by {TPPH.author} — free &amp; open-source
         </span>
         <span className="text-xs font-medium text-faint">
-          {SITE.domain}/qdashboards
+          {TPPH.domain}
+          {TPPH.basePath}
         </span>
       </div>
     </footer>

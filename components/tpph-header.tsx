@@ -1,22 +1,22 @@
 import Link from "next/link";
-import { Wordmark } from "./logo";
-import { SITE, withBase } from "@/lib/site";
+import { TpphWordmark } from "./logo";
+import { TPPH } from "@/lib/site";
 
-// The QGIS Dashboard section header — same editorial system as the hub:
-// white, flat, hairline base; coral semibold nav; square ink Install button.
+// The Title Plotter PH section header — same editorial system as the hub and
+// the dashboard section: white, flat, hairline base; coral semibold nav;
+// square ink Install button.
 const NAV = [
   { href: "/", label: "All plugins" },
-  { href: withBase("/#features"), label: "Features" },
-  { href: withBase("/guide"), label: "Guide" },
-  { href: withBase("/gallery"), label: "Gallery" },
+  { href: "/titleplotterph#features", label: "Features" },
+  { href: "/titleplotterph#how", label: "How it works" },
 ];
 
-export function SiteHeader() {
+export function TpphHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-line bg-paper">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
-        <Link href={withBase("/")} aria-label="QGIS Dashboard home">
-          <Wordmark size={30} />
+        <Link href="/titleplotterph" aria-label="Title Plotter PH home">
+          <TpphWordmark size={30} />
         </Link>
         <nav className="hidden items-center gap-6 md:flex">
           {NAV.map((item) => (
@@ -31,14 +31,17 @@ export function SiteHeader() {
         </nav>
         <div className="flex items-center gap-5">
           <a
-            href={SITE.repo}
+            href={TPPH.repo}
             target="_blank"
             rel="noreferrer"
             className="hidden text-sm font-semibold text-accent-ink underline-offset-4 transition-colors hover:text-accent hover:underline sm:inline-flex"
           >
             GitHub
           </a>
-          <a href={withBase("/guide#install")} className="btn btn-primary px-4 py-2 text-sm">
+          <a
+            href="/titleplotterph#install"
+            className="btn btn-primary px-4 py-2 text-sm"
+          >
             Install
           </a>
         </div>

@@ -41,9 +41,11 @@ export default function GuidePage() {
               <li key={s.id}>
                 <a
                   href={`#${s.id}`}
-                  className="flex items-baseline gap-3 rounded-lg px-3 py-2 text-sm text-muted transition-colors hover:bg-accent/8 hover:text-accent-ink"
+                  className="flex items-baseline gap-3 px-1 py-2 text-sm font-medium text-muted underline-offset-4 transition-colors hover:text-accent-ink hover:underline"
                 >
-                  <span className="stat text-xs text-faint">{s.n}</span>
+                  <span className="stat text-xs font-semibold text-faint">
+                    {s.n}
+                  </span>
                   {s.t}
                 </a>
               </li>
@@ -198,7 +200,7 @@ function Step({
   return (
     <section id={id} className="scroll-mt-24">
       <div className="flex items-baseline gap-3">
-        <span className="stat text-sm text-accent">{n}</span>
+        <span className="stat text-sm font-bold text-accent">{n}</span>
         <h2 className="display text-2xl text-ink">{title}</h2>
       </div>
       <div className="mt-4 space-y-4 leading-relaxed text-muted [&_strong]:text-ink [&_em]:text-ink">
@@ -210,7 +212,7 @@ function Step({
 
 function Code({ children }: { children: React.ReactNode }) {
   return (
-    <code className="stat rounded bg-accent/8 px-1.5 py-0.5 text-[0.85em] text-accent-ink">
+    <code className="bg-accent/8 px-1.5 py-0.5 font-mono text-[0.85em] text-accent-ink">
       {children}
     </code>
   );
@@ -218,15 +220,16 @@ function Code({ children }: { children: React.ReactNode }) {
 
 function Pre({ children }: { children: React.ReactNode }) {
   return (
-    <pre className="stat overflow-x-auto rounded-xl border border-line bg-surface p-4 text-xs leading-relaxed text-ink">
+    <pre className="overflow-x-auto border border-line bg-surface p-4 font-mono text-xs leading-relaxed text-ink">
       {children}
     </pre>
   );
 }
 
+// The reference's outlined content box: a coral hairline frame on white.
 function Callout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-line bg-accent/5 p-4 text-sm text-muted">
+    <div className="border border-accent p-4 text-sm text-muted">
       {children}
     </div>
   );
@@ -238,7 +241,7 @@ function A({ href, children }: { href: string; children: React.ReactNode }) {
       href={href}
       target="_blank"
       rel="noreferrer"
-      className="font-medium text-accent-ink underline decoration-line underline-offset-2 hover:decoration-accent"
+      className="font-semibold text-accent-ink underline underline-offset-4 hover:decoration-accent"
     >
       {children}
     </a>
@@ -248,9 +251,7 @@ function A({ href, children }: { href: string; children: React.ReactNode }) {
 function ListNum({ n, children }: { n: string; children: React.ReactNode }) {
   return (
     <li className="flex gap-3">
-      <span className="stat mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-accent/10 text-[0.7rem] text-accent-ink">
-        {n}
-      </span>
+      <span className="stat shrink-0 font-bold text-accent-ink">{n}.</span>
       <span>{children}</span>
     </li>
   );
