@@ -1,5 +1,5 @@
 // Centralized site copy + links, so pages and the plugin's published URLs stay
-// in sync. The plugin builds the same view URL in github_publish.public_view_url.
+// in sync. The plugin builds the same view URL in submit_payload.view_url.
 
 // The umbrella identity — the root "/" hub that lists every QGIS plugin.
 export const HUB = {

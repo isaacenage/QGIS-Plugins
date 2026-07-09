@@ -1,15 +1,58 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-// Wraps a published dashboard's self-contained index.html in an iframe. The
-// export is confirmed iframe-safe (no top/parent refs, responsive resize), so
-// it stays fully interactive — cross-filtering, charts and the Leaflet map all
-// work inside the frame.
+// Wraps a published dashboard's self-contained index.html in an iframe.
+//
+// The HTML lives in Supabase Storage, which serves it as text/plain on the
+// shared domain (deliberate anti-phishing), so we FETCH the bytes and load
+// them through a Blob URL instead of iframing the storage URL directly.
+//
+// SECURITY: dashboards are untrusted third-party HTML. The iframe withholds
+// allow-same-origin, so the content runs in an opaque origin with no access
+// to this site's cookies/storage — the Blob URL's nominal origin never takes
+// effect. Never expose the Blob URL as a top-level navigation (that WOULD
+// run the dashboard's scripts on this site's origin); downloads use the
+// storage URL's ?download parameter instead.
 
-export function DashboardFrame({ src, title }: { src: string; title: string }) {
+export function DashboardFrame({
+  src,
+  title,
+  downloadHref,
+}: {
+  src: string;
+  title: string;
+  downloadHref?: string;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [state, setState] = useState<"loading" | "ready" | "error">("loading");
+
+  useEffect(() => {
+    let alive = true;
+    let url: string | null = null;
+    setState("loading");
+    setBlobUrl(null);
+    fetch(src)
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.text();
+      })
+      .then((html) => {
+        if (!alive) return;
+        url = URL.createObjectURL(new Blob([html], { type: "text/html" }));
+        setBlobUrl(url);
+        setState("ready");
+      })
+      .catch(() => {
+        if (alive) setState("error");
+      });
+    return () => {
+      alive = false;
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [src]);
 
   const fullscreen = () => ref.current?.requestFullscreen?.();
 
@@ -38,14 +81,14 @@ export function DashboardFrame({ src, title }: { src: string; title: string }) {
           >
             {copied ? "Link copied" : "Copy link"}
           </button>
-          <a
-            href={src}
-            target="_blank"
-            rel="noreferrer"
-            className="rounded-full px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:bg-accent/8 hover:text-accent-ink"
-          >
-            Open ↗
-          </a>
+          {downloadHref && (
+            <a
+              href={downloadHref}
+              className="rounded-full px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:bg-accent/8 hover:text-accent-ink"
+            >
+              Download
+            </a>
+          )}
           <button
             type="button"
             onClick={fullscreen}
@@ -55,20 +98,24 @@ export function DashboardFrame({ src, title }: { src: string; title: string }) {
           </button>
         </div>
       </div>
-      {/*
-        Published dashboards are now contributed by untrusted authors and served
-        from this site's own origin. WITHHOLD allow-same-origin so their inline
-        JS is sandboxed off our origin (cookies/storage) — combining it with
-        allow-scripts would disable the sandbox entirely. The export is
-        self-contained (no parent/top refs, no localStorage), so it stays fully
-        interactive under allow-scripts alone.
-      */}
-      <iframe
-        src={src}
-        title={title}
-        className="h-full w-full flex-1 bg-white"
-        sandbox="allow-scripts allow-popups"
-      />
+      {state === "ready" && blobUrl ? (
+        <iframe
+          src={blobUrl}
+          title={title}
+          className="h-full w-full flex-1 bg-white"
+          sandbox="allow-scripts allow-popups"
+        />
+      ) : state === "error" ? (
+        <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
+          <p className="font-medium">This dashboard couldn&apos;t be loaded.</p>
+          <p className="max-w-md text-sm text-muted">
+            Check your connection and reload the page. If it keeps failing,
+            the dashboard may have been unpublished.
+          </p>
+        </div>
+      ) : (
+        <div className="flex-1 animate-pulse bg-paper" />
+      )}
     </div>
   );
 }

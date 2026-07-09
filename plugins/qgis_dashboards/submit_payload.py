@@ -1,70 +1,88 @@
 # -*- coding: utf-8 -*-
-"""Pure (Qt-free) helpers for the *Publish to public* submission payload.
+"""Pure (Qt-free) helpers for the *Publish to public* flow.
 
-The plugin no longer commits to GitHub directly. Instead it POSTs a finished
-dashboard to the website's ``/api/submit`` endpoint, which moderates it into a
-Pull Request (see ``submit_client`` for the QGIS-touching POST and
-``docs/superpowers/specs/2026-06-20-public-gallery-submissions-design.md``).
+The plugin publishes straight to Supabase now: the dashboard's files go into
+the public ``dashboards`` storage bucket and one metadata row goes into the
+``dashboards`` table (see ``submit_client`` for the QGIS-touching HTTP side).
+There is no GitHub, no Pull Request and no 4 MB Vercel body cap anymore — the
+only size limit is the bucket's per-file cap, mirrored here.
 
-The HTML is **gzipped** before sending: Vercel serverless functions cap request
-bodies at ~4.5 MB, and self-contained dashboards routinely exceed that
-uncompressed. HTML compresses ~5–10×, so this keeps typical dashboards within
-the wire budget. Everything here is plain Python so it unit-tests under a bare
+Everything in this module is plain Python so it unit-tests under a bare
 ``PYTHONPATH`` (run ``test/test_submit_payload.py`` directly).
 """
 
-import base64
-import gzip
-import json
+import re
+import unicodedata
+from urllib.parse import quote
 
-# Vercel serverless functions reject request bodies larger than ~4.5 MB with
-# HTTP 413. We refuse client-side a little under that (leaving headroom for
-# request headers / framing) so the user gets an actionable message instead of
-# an opaque server rejection. See ``exceeds_size_limit`` and the publisher's
-# preflight check.
-MAX_PAYLOAD_BYTES = 4 * 1024 * 1024  # 4 MB
+# Mirror the dashboards bucket's file_size_limit (50 MB) so the user gets an
+# actionable message client-side instead of an opaque storage rejection.
+MAX_HTML_BYTES = 50 * 1024 * 1024
 
+# Mirror the dashboards table's check constraints.
+MAX_TITLE = 200
+MAX_AUTHOR = 120
+MAX_DESC = 400
 
-def gzip_b64(html):
-    """Return base64(gzip(utf-8 *html*)) as an ASCII ``str``."""
-    if isinstance(html, str):
-        html = html.encode("utf-8")
-    compressed = gzip.compress(html)
-    return base64.b64encode(compressed).decode("ascii")
+# How many "slug", "slug-2", "slug-3", … candidates to try before giving up.
+MAX_SLUG_ATTEMPTS = 25
 
+VIEW_BASE_URL = "https://qgis.byzenterra.org/qdashboards/view"
 
-def b64(data_bytes):
-    """Return base64 of raw bytes as an ASCII ``str``."""
-    return base64.b64encode(data_bytes).decode("ascii")
+_SLUG_STRIP = re.compile(r"[^a-z0-9]+")
 
 
-def build_payload(title, author, html, thumb_bytes, description=None):
-    """Build the JSON-serializable submission body for ``/api/submit``.
+def slugify(title, fallback="dashboard"):
+    """Return a URL-safe slug for *title*.
 
-    The endpoint expects ``{title, author, description?, html_gz_b64, thumb_b64}``.
-    *description* is omitted when empty so the server treats it as absent.
+    Lowercase, accents stripped, non-alphanumeric runs collapsed to single
+    hyphens, trimmed. Empty/symbol-only titles fall back to *fallback*.
+    Mirrors lib/submit-core.mjs:slugify so plugin and site agree.
     """
-    payload = {
-        "title": title or "",
-        "author": author or "",
-        "html_gz_b64": gzip_b64(html),
-        "thumb_b64": b64(thumb_bytes),
+    text = unicodedata.normalize("NFKD", title or "")
+    text = text.encode("ascii", "ignore").decode("ascii")
+    text = _SLUG_STRIP.sub("-", text.lower()).strip("-")
+    return text or fallback
+
+
+def candidate_slug(base, attempt):
+    """The *attempt*-th slug candidate: ``base``, ``base-2``, ``base-3``, …"""
+    return base if attempt == 0 else "{}-{}".format(base, attempt + 1)
+
+
+def object_key(slug, name):
+    """An object's key inside the dashboards bucket, e.g. ``<slug>/index.html``."""
+    return "{}/{}".format(slug, name)
+
+
+def storage_path(slug, name):
+    """The bucket-qualified path recorded in the table (what the site turns
+    into a public URL), e.g. ``dashboards/<slug>/index.html``."""
+    return "dashboards/{}".format(object_key(slug, name))
+
+
+def view_url(slug):
+    """The public viewer URL for a published *slug* (mirrors lib/site.ts:viewUrl)."""
+    return "{}?d={}".format(VIEW_BASE_URL, quote(slug))
+
+
+def build_row(slug, title, author, description, html_bytes_len, has_thumb=True):
+    """The dashboards-table insert body for one published dashboard."""
+    row = {
+        "slug": slug,
+        "title": (title or slug)[:MAX_TITLE],
+        "author": (author or "").strip()[:MAX_AUTHOR] or None,
+        "html_path": storage_path(slug, "index.html"),
+        "thumb_path": storage_path(slug, "thumb.png") if has_thumb else None,
+        "html_bytes": html_bytes_len,
     }
     desc = (description or "").strip()
     if desc:
-        payload["description"] = desc
-    return payload
+        row["description"] = desc[:MAX_DESC]
+    return row
 
 
-def payload_bytes(payload):
-    """Encode a payload dict as UTF-8 JSON bytes ready to POST."""
-    return json.dumps(payload).encode("utf-8")
-
-
-def exceeds_size_limit(raw):
-    """True if *raw* (the POST body bytes) is over the gallery's request cap.
-
-    The boundary is inclusive: a body exactly at :data:`MAX_PAYLOAD_BYTES` is
-    still accepted; only strictly larger bodies are rejected.
-    """
-    return len(raw) > MAX_PAYLOAD_BYTES
+def exceeds_size_limit(html_bytes):
+    """True if the HTML is over the bucket's per-file cap (boundary inclusive:
+    exactly at the cap is still accepted)."""
+    return len(html_bytes) > MAX_HTML_BYTES

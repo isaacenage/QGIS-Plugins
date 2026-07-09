@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { DashboardEntry, dashboardSrc, loadManifest } from "@/lib/manifest";
+import { DashboardEntry, dashboardSrc, downloadSrc, loadManifest } from "@/lib/manifest";
 import { withBase } from "@/lib/site";
 import { DashboardFrame } from "./dashboard-frame";
 
@@ -43,7 +43,11 @@ export function DashboardViewer() {
       {state === "loading" ? (
         <div className="tile flex-1 animate-pulse opacity-60" />
       ) : entry ? (
-        <DashboardFrame src={dashboardSrc(entry)} title={entry.title} />
+        <DashboardFrame
+          src={dashboardSrc(entry)}
+          title={entry.title}
+          downloadHref={downloadSrc(entry)}
+        />
       ) : (
         <NotFound slug={slug} />
       )}

@@ -2,14 +2,12 @@
 """The *Publish to public* dialog.
 
 Collects the author + an optional description (the title comes from the QGIS
-project), runs the large-data guard, then submits the current dashboard to the
-public gallery's intake endpoint via :mod:`publisher`. The endpoint opens a
-**moderated Pull Request** — the dashboard appears in the gallery once the
-maintainer approves it — so the success screen reads "submitted for review",
-not a live URL.
+project), runs the large-data guard, then publishes the current dashboard
+straight to the gallery's Supabase storage via :mod:`publisher`. Publishing is
+**instant** — the success screen shows the live link, no review wait.
 
-No GitHub token or repository is needed anymore: contributors just fill in their
-name and click Submit. The author name is remembered locally for convenience.
+No account, token or sign-in is needed: contributors just fill in their name
+and click Publish. The author name is remembered locally for convenience.
 """
 
 from qgis.PyQt.QtCore import Qt, QSettings, QUrl
@@ -41,8 +39,8 @@ class PublishDialog(QDialog):
 
         intro = QLabel(
             "Share this dashboard in the public gallery. The plugin exports the "
-            "interactive HTML, renders a thumbnail and submits both for review. "
-            "Once approved, it appears at the public gallery for anyone to open.")
+            "interactive HTML, renders a thumbnail and publishes both — your "
+            "dashboard goes live in the gallery immediately.")
         intro.setWordWrap(True)
         root.addWidget(intro)
 
@@ -60,16 +58,15 @@ class PublishDialog(QDialog):
         root.addLayout(form)
 
         hint = QLabel(
-            "Your dashboard is submitted for review before it goes live — no "
-            "account or sign-in needed. The title comes from your QGIS project "
-            "name.")
+            "No account or sign-in needed. The title comes from your QGIS "
+            "project name; dashboards up to 50 MB are accepted.")
         hint.setWordWrap(True)
         hint.setStyleSheet("color:#55606d; font-size:11px;")
         root.addWidget(hint)
 
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Cancel)
         self._publish_btn = buttons.addButton(
-            "Submit", QDialogButtonBox.ButtonRole.AcceptRole)
+            "Publish", QDialogButtonBox.ButtonRole.AcceptRole)
         buttons.rejected.connect(self.reject)
         self._publish_btn.clicked.connect(self._publish)
         root.addWidget(buttons)
@@ -147,15 +144,22 @@ class PublishDialog(QDialog):
         return set()
 
     def _show_success(self, result):
+        view_url = result.get("view_url") or GALLERY_URL
         box = QMessageBox(self)
-        box.setWindowTitle("Submitted for review")
+        box.setWindowTitle("Published")
         box.setIcon(QMessageBox.Icon.Information)
         box.setText(
-            "Thanks! Your dashboard has been submitted for review.\n\n"
-            "Once it's approved it will appear in the public gallery. You can "
-            "check back there anytime.")
-        open_btn = box.addButton("Open gallery", QMessageBox.ButtonRole.AcceptRole)
+            "Your dashboard is live!\n\n{}\n\nAnyone can open it there — "
+            "cross-filtering, charts and the map all work in the "
+            "browser.".format(view_url))
+        open_btn = box.addButton(
+            "Open dashboard", QMessageBox.ButtonRole.AcceptRole)
+        gallery_btn = box.addButton(
+            "Open gallery", QMessageBox.ButtonRole.ActionRole)
         box.addButton(QMessageBox.StandardButton.Close)
         box.exec()
-        if box.clickedButton() is open_btn:
+        clicked = box.clickedButton()
+        if clicked is open_btn:
+            QDesktopServices.openUrl(QUrl(view_url))
+        elif clicked is gallery_btn:
             QDesktopServices.openUrl(QUrl(GALLERY_URL))

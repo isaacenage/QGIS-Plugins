@@ -4,12 +4,10 @@
   "private": true,
   "description": "Marketing, docs and public dashboard gallery for the QGIS Dashboard plugin.",
   "scripts": {
-    "prebuild": "node scripts/gen-manifest.mjs",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "gen-manifest": "node scripts/gen-manifest.mjs",
     "test": "node --test lib/*.test.mjs"
   },
   "dependencies": {
