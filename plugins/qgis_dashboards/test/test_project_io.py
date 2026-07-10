@@ -24,7 +24,7 @@ from project_io import (
 
 class EnsureSuffixTest(unittest.TestCase):
     def test_adds_when_missing(self):
-        self.assertEqual(ensure_suffix("/tmp/foo"), "/tmp/foo" + QDASH_SUFFIX)
+        self.assertEqual(ensure_suffix("out/foo"), "out/foo" + QDASH_SUFFIX)
 
     def test_keeps_when_present(self):
         self.assertEqual(ensure_suffix("foo.qdash"), "foo.qdash")

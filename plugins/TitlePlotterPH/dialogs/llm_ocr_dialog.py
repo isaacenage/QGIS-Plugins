@@ -42,7 +42,7 @@ def open_https_request(request, timeout):
     if scheme != "https":
         raise ValueError(
             f"Refusing to open URL with scheme '{scheme}'; only https is allowed.")
-    return urllib.request.urlopen(request, timeout=timeout)
+    return urllib.request.urlopen(request, timeout=timeout)  # nosec B310 - scheme validated as https above
 
 
 

@@ -27,7 +27,7 @@ from .submit_payload import (
 SUPABASE_URL = "https://dywixbogcfphybzmimqw.supabase.co"
 # Publishable (anon) key — designed to ship in client code; Row Level
 # Security is what limits it (see module docstring).
-SUPABASE_ANON_KEY = "sb_publishable_boQFoicY4U3d2naPjM8Ogg_vurpLiro"
+SUPABASE_ANON_KEY = "sb_publishable_boQFoicY4U3d2naPjM8Ogg_vurpLiro"  # pragma: allowlist secret  # nosec B105
 BUCKET = "dashboards"
 
 GALLERY_URL = "https://qgis.byzenterra.org/qdashboards/gallery"
