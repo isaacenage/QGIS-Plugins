@@ -45,7 +45,6 @@ def open_https_request(request, timeout):
     return urllib.request.urlopen(request, timeout=timeout)  # nosec B310 - scheme validated as https above
 
 
-
 class ApiCallWorker(QThread):
     """Worker thread for making API calls without blocking the UI."""
 
@@ -76,7 +75,7 @@ class ApiCallWorker(QThread):
 
 class ApiKeyHelpDialog(QDialog):
     """Dialog showing instructions to get an API key based on provider."""
-    
+
     # Provider configuration for help dialog
     PROVIDERS = {
         "Gemini": {
@@ -123,9 +122,9 @@ class ApiKeyHelpDialog(QDialog):
         super().__init__(parent)
         self.provider = provider if provider in self.PROVIDERS else "Gemini"
         config = self.PROVIDERS[self.provider]
-        
+
         self.target_url = config['url']
-        
+
         self.setWindowTitle(f"How to Get a {self.provider} API Key")
         self.setMinimumWidth(450)
         self.layout = QVBoxLayout(self)
@@ -136,32 +135,33 @@ class ApiKeyHelpDialog(QDialog):
             f"<h3>{config['title']}</h3>"
             f"<p>To use the OCR feature with {self.provider}, you need a valid API key.</p>"
             f"{config['instructions']}"
-            "<li style='margin-bottom: 8px; margin-left: 15px;'>Return to this plugin and paste it into the <b>'API Key'</b> field.</li>"
+            "<li style='margin-bottom: 8px; margin-left: 15px;'>"
+            "Return to this plugin and paste it into the <b>'API Key'</b> field.</li>"
             "<br>"
         )
 
         label = QLabel(html_content)
         label.setWordWrap(True)
         label.setTextFormat(Qt.TextFormat.RichText)
-        label.setOpenExternalLinks(True) 
+        label.setOpenExternalLinks(True)
         self.layout.addWidget(label)
 
         # Action Buttons
         btn_box = QHBoxLayout()
-        
+
         # Styled 'Open' button
         self.open_url_btn = QPushButton(f"Open {self.provider} Console")
         self.open_url_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.open_url_btn.setStyleSheet("font-weight: bold; padding: 6px;")
         self.open_url_btn.clicked.connect(self.open_url)
-        
+
         self.close_btn = QPushButton("Close")
         self.close_btn.clicked.connect(self.accept)
 
         btn_box.addWidget(self.open_url_btn)
         btn_box.addStretch()
         btn_box.addWidget(self.close_btn)
-        
+
         self.layout.addLayout(btn_box)
 
     def open_url(self):
@@ -182,12 +182,12 @@ class LLMOCRDialog(QDialog, FORM_CLASS):
         },
         "OpenAI": {
             "api_url": "https://api.openai.com/v1/chat/completions",
-            "model": "gpt-4o-mini", # Cost effective
+            "model": "gpt-4o-mini",  # Cost effective
             "style": "openai"
         },
         "DeepSeek": {
             "api_url": "https://api.deepseek.com/chat/completions",
-            "model": "deepseek-chat", # Only supported endpoint
+            "model": "deepseek-chat",  # Only supported endpoint
             "style": "openai"
         }
     }
@@ -200,7 +200,7 @@ class LLMOCRDialog(QDialog, FORM_CLASS):
         """Constructor."""
         super(LLMOCRDialog, self).__init__(parent)
         self.setupUi(self)
-        
+
         # Apply the shared Title Plotter theme (neutral chrome + teal accent)
         theme.apply(self)
 
@@ -217,7 +217,7 @@ class LLMOCRDialog(QDialog, FORM_CLASS):
 
         # Load settings
         self.settings = QSettings('TitlePlotterPH', 'GeminiOCR')
-        
+
         # Load saved provider (default to Gemini)
         self.current_provider = self.settings.value('provider', 'Gemini')
         if self.current_provider not in self.PROVIDER_CONFIG:
@@ -231,7 +231,6 @@ class LLMOCRDialog(QDialog, FORM_CLASS):
 
         # Add API key input field
         self.setup_api_key_input()
-
 
         # --- Middle Section (Image + Text) ---
         mid_layout = QHBoxLayout()
@@ -293,12 +292,12 @@ class LLMOCRDialog(QDialog, FORM_CLASS):
         provider_layout = QHBoxLayout()
         provider_label = QLabel("AI Provider:")
         provider_label.setFixedWidth(80)
-        
+
         self.providerCombo = QComboBox()
         self.providerCombo.addItems(self.PROVIDER_CONFIG.keys())
         self.providerCombo.setCurrentText(self.current_provider)
         self.providerCombo.currentIndexChanged.connect(self.on_provider_changed)
-        
+
         provider_layout.addWidget(provider_label)
         provider_layout.addWidget(self.providerCombo)
         top_layout.addLayout(provider_layout)
@@ -308,7 +307,7 @@ class LLMOCRDialog(QDialog, FORM_CLASS):
 
         api_key_label = QLabel("API Key:")
         api_key_label.setFixedWidth(80)
-        
+
         self.apiKeyInput = QLineEdit()
         self.apiKeyInput.setEchoMode(QLineEdit.EchoMode.Password)
         self.apiKeyInput.setPlaceholderText(f"Enter your {self.current_provider} API key")
@@ -327,11 +326,12 @@ class LLMOCRDialog(QDialog, FORM_CLASS):
         self.helpBtn = QPushButton("Get API Key")
         self.helpBtn.setToolTip("Click for instructions on how to get a free API key")
         self.helpBtn.clicked.connect(self.show_api_help)
-        
-        # Style the help button to look like a link or action
-        self.helpBtn.setStyleSheet("color: #14575b; font-weight: bold; text-decoration: underline; background: transparent; border: none;")
-        self.helpBtn.setCursor(Qt.CursorShape.PointingHandCursor)
 
+        # Style the help button to look like a link or action
+        self.helpBtn.setStyleSheet(
+            "color: #14575b; font-weight: bold; text-decoration: underline; "
+            "background: transparent; border: none;")
+        self.helpBtn.setCursor(Qt.CursorShape.PointingHandCursor)
 
         api_key_layout.addWidget(api_key_label)
         api_key_layout.addWidget(self.apiKeyInput)
@@ -346,20 +346,20 @@ class LLMOCRDialog(QDialog, FORM_CLASS):
     def on_provider_changed(self):
         """Handle provider change."""
         new_provider = self.providerCombo.currentText()
-        
+
         # Save key for previous provider
         old_key = self.apiKeyInput.text().strip()
         if old_key:
-           self.settings.setValue(f'api_key_{self.current_provider}', old_key)
-        
+            self.settings.setValue(f'api_key_{self.current_provider}', old_key)
+
         # Update current provider
         self.current_provider = new_provider
         self.settings.setValue('provider', self.current_provider)
-        
+
         # Update UI text
         self.apiKeyInput.setPlaceholderText(f"Enter your {self.current_provider} API key")
         self.update_window_title()
-        
+
         # Load key for new provider
         saved_key = self.settings.value(f'api_key_{self.current_provider}', '')
         self.apiKeyInput.setText(saved_key)
@@ -421,7 +421,10 @@ class LLMOCRDialog(QDialog, FORM_CLASS):
                 new_width = int(width * max_dim / height)
 
             print(f"Resizing image from {width}x{height} to {new_width}x{new_height}")
-            return qimage.scaled(new_width, new_height, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+            return qimage.scaled(
+                new_width, new_height,
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation)
 
         return qimage
 
@@ -701,7 +704,7 @@ CRITICAL:
             if bearings:
                 display_lines.append("=== TECHNICAL DESCRIPTION ===")
                 for i, b in enumerate(bearings):
-                    line_label = b.get('line', f'{i+1}')
+                    line_label = b.get('line', f'{i + 1}')
                     direction = b.get('direction', '?')
                     degrees = b.get('degrees', 0)
                     minutes = b.get('minutes', 0)
@@ -755,7 +758,9 @@ CRITICAL:
                 # Format the extracted bearings for display
                 lines = []
                 for i, b in enumerate(bearings):
-                    lines.append(f"{i+1}: {b['direction']} {b['degrees']} {b['minutes']} {b['quadrant']}, {b['distance']} M")
+                    lines.append(
+                        f"{i + 1}: {b['direction']} {b['degrees']} "
+                        f"{b['minutes']} {b['quadrant']}, {b['distance']} M")
                 self.rawOcrTextEdit.setPlainText('\n'.join(lines))
 
                 QMessageBox.information(
@@ -788,32 +793,32 @@ CRITICAL:
         name = (info.get('name') or '').replace(" ", "").lower()
         province = (info.get('province') or '').lower()
         municipality = (info.get('municipality') or '').lower()
-        
+
         if not name:
             return None
-            
+
         # Create a copy for searching
         df = _TIEPOINT_DF.copy()
         df["__name"] = df["Tie Point Name"].astype(str).str.replace(" ", "").str.lower()
-        
+
         # Filter by name first (most specific)
         matches = df[df["__name"].str.contains(name, na=False)]
-        
+
         if matches.empty:
             return None
-            
+
         # Try to narrow down by location if multiple matches
         if len(matches) > 1 and (province or municipality):
             if province:
                 matches_prov = matches[matches["Province"].str.lower().str.contains(province, na=False)]
                 if not matches_prov.empty:
                     matches = matches_prov
-            
+
             if municipality and len(matches) > 1:
                 matches_muni = matches[matches["Municipality"].str.lower().str.contains(municipality, na=False)]
                 if not matches_muni.empty:
                     matches = matches_muni
-        
+
         if not matches.empty:
             # Take the first best match
             row = matches.iloc[0]
@@ -858,15 +863,15 @@ CRITICAL:
                     "temperature": 0
                 }
             }
-            
+
             headers = {"Content-Type": "application/json"}
             data = json.dumps(payload).encode('utf-8')
             request = urllib.request.Request(url, data=data, headers=headers, method='POST')
 
-            print(f"Sending request to Gemini...")
+            print("Sending request to Gemini...")
             with open_https_request(request, timeout=120) as response:
                 result = json.loads(response.read().decode('utf-8'))
-                
+
                 if 'candidates' in result and len(result['candidates']) > 0:
                     candidate = result['candidates'][0]
                     if 'content' in candidate and 'parts' in candidate['content']:
@@ -909,7 +914,7 @@ CRITICAL:
                 "temperature": 0,
                 "max_tokens": 2048
             }
-            
+
             # Headers
             headers = {
                 "Content-Type": "application/json",
@@ -923,7 +928,7 @@ CRITICAL:
             # Longer timeout for vision analysis
             with open_https_request(request, timeout=120) as response:
                 result = json.loads(response.read().decode('utf-8'))
-                
+
                 if 'choices' in result and len(result['choices']) > 0:
                     return result['choices'][0]['message']['content']
                 return None
@@ -943,15 +948,21 @@ CRITICAL:
             wait_time = self.extract_retry_time(error_body)
             if wait_time and wait_time <= 120:
                 reply = QMessageBox.question(self, "Rate Limited",
-                    f"API rate limit reached. Wait {int(wait_time)} seconds and retry?",
-                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+                                             f"API rate limit reached. Wait {int(wait_time)} seconds and retry?",
+                                             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
                 if reply == QMessageBox.StandardButton.Yes:
                     QApplication.processEvents()
                     time.sleep(wait_time + 1)
                     if style == "gemini":
-                        return self.call_gemini_native_api(api_key, prompt, self.PROVIDER_CONFIG[self.current_provider]['api_url'], retry_count + 1)
+                        return self.call_gemini_native_api(
+                            api_key, prompt,
+                            self.PROVIDER_CONFIG[self.current_provider]['api_url'],
+                            retry_count + 1)
                     else:  # "openai" style
-                        return self.call_openai_style_api(api_key, prompt, self.PROVIDER_CONFIG[self.current_provider], retry_count + 1)
+                        return self.call_openai_style_api(
+                            api_key, prompt,
+                            self.PROVIDER_CONFIG[self.current_provider],
+                            retry_count + 1)
 
         self.show_api_error(code, error_body)
         return None
@@ -962,7 +973,7 @@ CRITICAL:
             match = re.search(r'retry in (\d+(?:\.\d+)?)', error_body, re.IGNORECASE)
             if match:
                 return float(match.group(1))
-        except:
+        except Exception:
             pass
         return 60
 
@@ -971,26 +982,26 @@ CRITICAL:
         try:
             error_json = json.loads(error_body)
             error_message = error_json.get('error', {}).get('message', error_body)
-        except:
+        except Exception:
             error_message = error_body
 
         if code == 400:
             QMessageBox.critical(self, "API Error",
-                f"Bad request.\n\nDetails: {error_message}")
+                                 f"Bad request.\n\nDetails: {error_message}")
         elif code == 401 or code == 403:
             QMessageBox.critical(self, "API Error",
-                f"Invalid or unauthorized API key.\n\nDetails: {error_message}")
+                                 f"Invalid or unauthorized API key.\n\nDetails: {error_message}")
         elif code == 429:
             QMessageBox.critical(self, "API Error",
-                f"Rate limit or quota exceeded.\n\nDetails: {error_message}\n\n"
-                "Please wait a moment or check your API quota at:\n"
-                "https://console.cloud.google.com/apis/api/generativelanguage.googleapis.com/quotas")
+                                 f"Rate limit or quota exceeded.\n\nDetails: {error_message}\n\n"
+                                 "Please wait a moment or check your API quota at:\n"
+                                 "https://console.cloud.google.com/apis/api/generativelanguage.googleapis.com/quotas")
         elif code == 404:
             QMessageBox.critical(self, "API Error",
-                f"Model not found. Try a different model.\n\nDetails: {error_message}")
+                                 f"Model not found. Try a different model.\n\nDetails: {error_message}")
         else:
             QMessageBox.critical(self, "API Error",
-                f"HTTP Error {code}:\n\n{error_message}")
+                                 f"HTTP Error {code}:\n\n{error_message}")
 
     def parse_bearings_legacy(self, raw_text):
         """Legacy text parser as fallback - handles various formats including partial JSON."""
@@ -1317,7 +1328,7 @@ CRITICAL:
                         bearing['quadrant'] in ['E', 'W'] and
                         0 <= bearing['degrees'] <= 90 and
                         0 <= bearing['minutes'] <= 59 and
-                        bearing['distance'] > 0):
+                            bearing['distance'] > 0):
                         bearings.append(bearing)
                 except (ValueError, IndexError):
                     continue

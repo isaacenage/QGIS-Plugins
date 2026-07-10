@@ -44,7 +44,7 @@ class TiePointSelectorDialog(QDialog, FORM_CLASS):
         # Additional table customization
         self.tiePointTable.setAlternatingRowColors(True)
         self.tiePointTable.setShowGrid(False)  # Cleaner look without full grid
-        self.tiePointTable.verticalHeader().setVisible(False) # Hide row numbers
+        self.tiePointTable.verticalHeader().setVisible(False)  # Hide row numbers
 
         self.setup_connections()
         self.setup_table_headers()
@@ -228,16 +228,16 @@ class TiePointSelectorDialog(QDialog, FORM_CLASS):
         # 2. Rearrange Widgets using a Grid Layout
         # Create a new grid layout
         grid = QGridLayout()
-        grid.setContentsMargins(0, 0, 0, 10) # Add some bottom spacing
+        grid.setContentsMargins(0, 0, 0, 10)  # Add some bottom spacing
         grid.setSpacing(10)
 
         # Row 0: Top Left (Province) & Top Right (Municipality + Search)
         # Province
-        grid.addWidget(self.label_3, 0, 0) # Province Label
+        grid.addWidget(self.label_3, 0, 0)  # Province Label
         grid.addWidget(self.provinceComboBox, 0, 1)
 
         # Municipality
-        grid.addWidget(self.label_4, 0, 2) # Municipality Label
+        grid.addWidget(self.label_4, 0, 2)  # Municipality Label
         grid.addWidget(self.municipalityInput, 0, 3)
 
         # Search Button (Keep it accessible in the top row)
@@ -245,12 +245,12 @@ class TiePointSelectorDialog(QDialog, FORM_CLASS):
 
         # Row 1: Lower Left (Name) & Lower Right (Description)
         # Name
-        grid.addWidget(self.label, 1, 0) # Name Label
+        grid.addWidget(self.label, 1, 0)  # Name Label
         grid.addWidget(self.nameInput, 1, 1)
 
         # Description
-        grid.addWidget(self.label_2, 1, 2) # Description Label
-        grid.addWidget(self.descriptionInput, 1, 3, 1, 2) # Span 2 columns to align with search button edge
+        grid.addWidget(self.label_2, 1, 2)  # Description Label
+        grid.addWidget(self.descriptionInput, 1, 3, 1, 2)  # Span 2 columns to align with search button edge
 
         # Remove the old horizontal layouts from the main vertical layout
         # Note: The widgets are automatically reparented to the grid when added,
@@ -262,8 +262,8 @@ class TiePointSelectorDialog(QDialog, FORM_CLASS):
         # 2: tiePointTable
 
         # Remove the first two items (the old layouts)
-        item0 = self.verticalLayout.takeAt(0) # horizontalLayout
-        item1 = self.verticalLayout.takeAt(0) # Now horizontalLayout_2 is at 0
+        item0 = self.verticalLayout.takeAt(0)  # horizontalLayout
+        item1 = self.verticalLayout.takeAt(0)  # Now horizontalLayout_2 is at 0
 
         # Delete the old layout objects to clean up
         if item0.layout():

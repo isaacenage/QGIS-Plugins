@@ -1,23 +1,20 @@
 from qgis.PyQt import uic, QtWidgets
 from qgis.PyQt.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLineEdit, QPushButton,
-    QWidget, QGraphicsScene, QGraphicsPolygonItem, QGraphicsLineItem, QSizePolicy,
-    QMessageBox, QTableWidgetItem, QHeaderView, QAbstractItemView, QComboBox, QLabel,
-    QFrame, QGraphicsDropShadowEffect, QTabWidget, QScrollArea, QTextBrowser, QApplication,
-    QFileDialog, QDialogButtonBox)
+                                 QWidget, QSizePolicy, QMessageBox, QLabel,
+                                 QFrame, QTabWidget, QScrollArea, QApplication,
+                                 QFileDialog)
 from qgis.PyQt.QtGui import (QPolygonF, QPen, QColor, QPainter, QIntValidator,
-    QRegularExpressionValidator,
-    QFont, QPixmap, QDrag, QCursor, QPdfWriter, QPageSize, QPageLayout, QFontMetrics, QBrush,
-    QImage)
-from qgis.PyQt.QtCore import (Qt, QPointF, pyqtSignal, QMetaType, QBuffer, QIODevice,
-    QRegularExpression, QVariant,
-    QMimeData, QTimer, QEvent, QPoint, QRectF, QSizeF, QMarginsF, QDate, QUrl)
+                             QRegularExpressionValidator,
+                             QFont, QPixmap, QCursor, QPdfWriter, QPageSize, QPageLayout, QFontMetrics, QBrush,
+                             QImage)
+from qgis.PyQt.QtCore import (Qt, QPointF, pyqtSignal, QMetaType,
+                              QRegularExpression, QVariant,
+                              QTimer, QPoint, QRectF, QMarginsF, QDate, QUrl)
 from qgis.PyQt.QtGui import QDesktopServices
 from .. import theme, icons
 import os
 import math
 import json
-from shapely.geometry import Polygon
-from math import sin, cos, radians
 from qgis.core import (
     QgsPointXY,
     QgsGeometry,
@@ -25,11 +22,7 @@ from qgis.core import (
     QgsVectorLayer,
     QgsProject,
     QgsCoordinateReferenceSystem,
-    QgsCoordinateTransform,
-    QgsFields,
     QgsField,
-    QgsWkbTypes,
-    QgsApplication,
     QgsRectangle,
     QgsFillSymbol,
     QgsMarkerSymbol,
@@ -67,7 +60,6 @@ except ImportError:
 
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(os.path.dirname(__file__)), 'forms', 'title_plotter_dialog_base.ui'))
-
 
 
 # Grouped Input Style (for inputs inside grouped frame)
@@ -135,6 +127,7 @@ QFrame {
 }
 """
 
+
 def bearing_to_azimuth(direction_ns, degrees, minutes, direction_ew):
     """Convert bearing to azimuth in degrees using Excel's method."""
     angle = int(degrees) + int(minutes) / 60
@@ -148,6 +141,7 @@ def bearing_to_azimuth(direction_ns, degrees, minutes, direction_ew):
         return 360 - angle
     else:
         raise ValueError("Invalid bearing direction combination.")
+
 
 def calculate_deltas(ns, deg, minute, ew, distance):
     """Calculate latitude and departure deltas for a single bearing line with correct signs."""
@@ -163,7 +157,8 @@ def calculate_deltas(ns, deg, minute, ew, distance):
     if ew.upper() == 'W':
         delta_dep *= -1
 
-    return round(delta_lat, 3), round(delta_dep, 3) # Round to 3 decimal places
+    return round(delta_lat, 3), round(delta_dep, 3)  # Round to 3 decimal places
+
 
 def generate_coordinates(tie_easting, tie_northing, bearing_rows):
     """Generate coordinates using Excel's cumulative delta method."""
@@ -187,7 +182,7 @@ def generate_coordinates(tie_easting, tie_northing, bearing_rows):
                 raise ValueError(f"Minutes must be between 0 and 59 (got {min_})")
 
         except Exception as e:
-            raise ValueError(f"Bearing row {i+1} has invalid input: {e}")
+            raise ValueError(f"Bearing row {i + 1} has invalid input: {e}")
 
         # Use the new calculate_deltas function
         delta_lat, delta_dep = calculate_deltas(ns, deg, min_, ew, dist)
@@ -199,6 +194,7 @@ def generate_coordinates(tie_easting, tie_northing, bearing_rows):
 
     return coords
 
+
 def calculate_misclosure(tie_easting, tie_northing, final_easting, final_northing):
     """Calculate the misclosure (distance between starting and ending points).
 
@@ -208,6 +204,7 @@ def calculate_misclosure(tie_easting, tie_northing, final_easting, final_northin
     delta_e = final_easting - tie_easting
     delta_n = final_northing - tie_northing
     return math.sqrt(delta_e**2 + delta_n**2)
+
 
 def calculate_polygon_area(coords):
     """Calculate the area of a polygon using the Shoelace formula.
@@ -241,6 +238,7 @@ def calculate_polygon_area(coords):
 
 class DropIndicatorWidget(QFrame):
     """Visual indicator for drop position during drag-and-drop."""
+
     def __init__(self, parent=None):
         super(DropIndicatorWidget, self).__init__(parent)
         self.setStyleSheet(DROP_INDICATOR_STYLE)
@@ -284,6 +282,7 @@ class DraggableLineLabel(QLabel):
 
 class BearingRowWidget(QWidget):
     """Widget for a single bearing input row with delta calculations."""
+
     def __init__(self, parent=None, is_first_row=False, dialog=None):
         super(BearingRowWidget, self).__init__(parent)
         self.is_first_row = is_first_row
@@ -486,7 +485,7 @@ class BearingRowWidget(QWidget):
 
         # Apply grouped style to all inputs
         for input_field in [self.directionInput, self.degreesInput, self.minutesInput,
-                           self.quadrantInput, self.distanceInput]:
+                            self.quadrantInput, self.distanceInput]:
             input_field.setStyleSheet(GROUPED_INPUT_STYLE)
             input_field.setFixedHeight(22)
 
@@ -522,11 +521,11 @@ class BearingRowWidget(QWidget):
 
         # Connect signals
         self.distanceInput.textChanged.connect(self.update_deltas)
-        self.directionInput.textChanged.connect(self.update_deltas) # Also update deltas on direction change
-        self.degreesInput.textChanged.connect(self.update_deltas) # Also update deltas on degrees change
-        self.minutesInput.textChanged.connect(self.update_deltas) # Also update deltas on minutes change
-        self.quadrantInput.textChanged.connect(self.update_deltas) # Also update deltas on quadrant change
-        
+        self.directionInput.textChanged.connect(self.update_deltas)  # Also update deltas on direction change
+        self.degreesInput.textChanged.connect(self.update_deltas)  # Also update deltas on degrees change
+        self.minutesInput.textChanged.connect(self.update_deltas)  # Also update deltas on minutes change
+        self.quadrantInput.textChanged.connect(self.update_deltas)  # Also update deltas on quadrant change
+
         # Add validation signals
         self.degreesInput.textChanged.connect(self.validate_degrees)
         self.minutesInput.textChanged.connect(self.validate_minutes)
@@ -548,7 +547,7 @@ class BearingRowWidget(QWidget):
         # Connect text changed signals to trigger WKT generation
         if self.dialog is not None:
             for input_field in [self.directionInput, self.degreesInput, self.minutesInput,
-                              self.quadrantInput, self.distanceInput]:
+                                self.quadrantInput, self.distanceInput]:
                 input_field.textChanged.connect(self.dialog.generate_wkt)
 
     def validate_degrees(self):
@@ -600,7 +599,7 @@ class BearingRowWidget(QWidget):
         self.distanceInput.setText("")
         # Reset to grouped input styling
         for input_field in [self.directionInput, self.degreesInput, self.minutesInput,
-                           self.quadrantInput, self.distanceInput]:
+                            self.quadrantInput, self.distanceInput]:
             input_field.setStyleSheet(GROUPED_INPUT_STYLE)
         self.deltaLatLabel.setText("ΔLat: 0.000")
         self.deltaDepLabel.setText("ΔDep: 0.000")
@@ -655,6 +654,7 @@ class BearingRowWidget(QWidget):
         """Handle down arrow button click."""
         if self.dialog is not None:
             self.dialog.move_row_down(self)
+
 
 class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
     def __init__(self, iface, parent=None):
@@ -1201,7 +1201,7 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
         property_info_header_layout = QHBoxLayout(property_info_header_container)
         property_info_header_layout.setContentsMargins(0, 0, 0, 0)
         property_info_header_layout.setSpacing(8)
-        
+
         # Toggle arrow indicator (▼ = collapsed, ▲ = expanded)
         self.property_info_toggle_arrow = QLabel("▼")
         self.property_info_toggle_arrow.setStyleSheet("""
@@ -1214,7 +1214,7 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
             }
         """)
         self.property_info_toggle_arrow.setFixedWidth(20)
-        
+
         property_info_header = QLabel("Property Information")
         property_info_header.setStyleSheet("""
             QLabel {
@@ -1225,14 +1225,14 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
                 border: none;
             }
         """)
-        
+
         property_info_header_layout.addWidget(self.property_info_toggle_arrow)
         property_info_header_layout.addWidget(property_info_header)
         property_info_header_layout.addStretch()
-        
+
         # Make the header clickable
         property_info_header_container.mousePressEvent = lambda event: self.toggle_property_info()
-        
+
         property_info_layout.addWidget(property_info_header_container)
 
         # Input field style for property info
@@ -1366,10 +1366,10 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
         details_row.addLayout(area_container, 1)
 
         property_info_content_layout.addLayout(details_row)
-        
+
         # Add the content container to the main property info layout
         property_info_layout.addWidget(self.property_info_content)
-        
+
         # Set default state to collapsed
         self.property_info_content.setVisible(False)
         # --- End Property Information Panel ---
@@ -1481,11 +1481,11 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
         # This is already handled by setupUi, but re-checking doesn't hurt
         self.bearingListLayout = self.scrollAreaWidgetContents.layout()
         if not isinstance(self.bearingListLayout, QVBoxLayout):
-             # This case should ideally not happen if UI is correctly set up
+            # This case should ideally not happen if UI is correctly set up
             self.bearingListLayout = QVBoxLayout(self.scrollAreaWidgetContents)
-            self.bearingListLayout.setAlignment(Qt.AlignmentFlag.AlignTop) # Ensure alignment
-            self.bearingListLayout.setContentsMargins(0,0,0,0) # Ensure margins
-            self.bearingListLayout.setSpacing(2) # Ensure spacing
+            self.bearingListLayout.setAlignment(Qt.AlignmentFlag.AlignTop)  # Ensure alignment
+            self.bearingListLayout.setContentsMargins(0, 0, 0, 0)  # Ensure margins
+            self.bearingListLayout.setSpacing(2)  # Ensure spacing
 
         # Set minimum height for the scroll area
         # This is set in UI, but can be enforced here if needed
@@ -1499,7 +1499,7 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
 
         # Store the last generated WKT
         self.last_wkt = None
-        
+
         # Initialize preview layers (for the QgsMapCanvas)
         self.preview_layer = None
         self.preview_points_layer = None
@@ -2095,7 +2095,10 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
         if os.path.exists(qr_path):
             pixmap = QPixmap(qr_path)
             # Scale the image to fit nicely in the dialog
-            scaled_pixmap = pixmap.scaled(300, 300, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+            scaled_pixmap = pixmap.scaled(
+                300, 300,
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation)
             qr_label.setPixmap(scaled_pixmap)
         else:
             qr_label.setText("QR Code not found")
@@ -2299,7 +2302,7 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
             elif i == len(self.bearing_rows) - 1:
                 row.lineLabel.setText(f"{i} - 1")
             else:
-                row.lineLabel.setText(f"{i} - {i+1}")
+                row.lineLabel.setText(f"{i} - {i + 1}")
         # Update arrow button states
         self.update_arrow_buttons()
 
@@ -2394,7 +2397,7 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
             minutes = row_layout.itemAt(2).widget().text().strip()
             quadrant = row_layout.itemAt(3).widget().text().strip().upper()
             distance = row_layout.itemAt(4).widget().text().strip()
-            
+
             if all([direction, degrees, minutes, quadrant, distance]):
                 try:
                     data.append({
@@ -2450,7 +2453,8 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
                 # Add tie point if provided
                 if tie_point_coords:
                     tp_feature = QgsFeature()
-                    tp_feature.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(tie_point_coords[0], tie_point_coords[1])))
+                    tp_feature.setGeometry(QgsGeometry.fromPointXY(
+                        QgsPointXY(tie_point_coords[0], tie_point_coords[1])))
                     point_features.append(tp_feature)
 
                 # Add polygon vertices
@@ -2474,7 +2478,9 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
                 self.preview_points_layer.triggerRepaint()
 
                 # === ANNOTATION LAYER (for labels) ===
-                self.preview_annotation_layer = QgsAnnotationLayer("Labels Layer", QgsAnnotationLayer.LayerOptions(QgsProject.instance().transformContext()))
+                self.preview_annotation_layer = QgsAnnotationLayer(
+                    "Labels Layer",
+                    QgsAnnotationLayer.LayerOptions(QgsProject.instance().transformContext()))
 
                 # Configure text format for labels
                 text_format = QgsTextFormat()
@@ -2510,19 +2516,26 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
 
                 # Add tie point label if provided
                 if tie_point_coords:
-                    tp_text_item = QgsAnnotationPointTextItem("TP", QgsPointXY(tie_point_coords[0] + label_offset_x, tie_point_coords[1] + label_offset_y))
+                    tp_text_item = QgsAnnotationPointTextItem(
+                        "TP",
+                        QgsPointXY(tie_point_coords[0] + label_offset_x,
+                                   tie_point_coords[1] + label_offset_y))
                     tp_text_item.setFormat(text_format)
                     self.preview_annotation_layer.addItem(tp_text_item)
 
                 # Add labels for polygon vertices (1, 2, 3, etc.)
                 for i, (x, y) in enumerate(coords):
-                    text_item = QgsAnnotationPointTextItem(str(i + 1), QgsPointXY(x + label_offset_x, y + label_offset_y))
+                    text_item = QgsAnnotationPointTextItem(
+                        str(i + 1),
+                        QgsPointXY(x + label_offset_x, y + label_offset_y))
                     text_item.setFormat(text_format)
                     self.preview_annotation_layer.addItem(text_item)
- 
+
                 # Set all layers to canvas (polygon at bottom, points middle, annotations on top)
                 # Note: In setLayers(), first layer renders on TOP, so reverse order for correct z-order
-                self.previewCanvas.setLayers([self.preview_annotation_layer, self.preview_points_layer, self.preview_layer])
+                self.previewCanvas.setLayers(
+                    [self.preview_annotation_layer, self.preview_points_layer,
+                     self.preview_layer])
             else:
                 # Points layer failed, just use polygon layer
                 self.preview_points_layer = None
@@ -2574,7 +2587,7 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
                     # Add to coordinates list
                     coords.append((current_e, current_n))
 
-                except (ValueError, AttributeError) as e:
+                except (ValueError, AttributeError):
                     self._clear_info_panel()
                     return
 
@@ -2616,7 +2629,7 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
             wkt_coords = ', '.join([f'{x} {y}' for x, y in coords])
             # Add the starting point to close the polygon
             if coords:
-                 wkt_coords += f', {coords[0][0]} {coords[0][1]}'
+                wkt_coords += f', {coords[0][0]} {coords[0][1]}'
 
             self.last_wkt = f"POLYGON (({wkt_coords}))"
 
@@ -2811,11 +2824,13 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
     def open_tiepoint_selector(self):
         """Opens the tie point selection dialog."""
         if TiePointSelectorDialog is None:
-            QtWidgets.QMessageBox.warning(self, "Dependency Missing", "The tie point selector dialog file (tie_point_selector_dialog.py) was not found.")
+            QtWidgets.QMessageBox.warning(
+                self, "Dependency Missing",
+                "The tie point selector dialog file (tie_point_selector_dialog.py) was not found.")
             return
 
         dialog = TiePointSelectorDialog(self)
-        if dialog.exec(): # exec_() returns QDialog.Accepted or QDialog.Rejected
+        if dialog.exec():  # exec_() returns QDialog.Accepted or QDialog.Rejected
             selected_row = dialog.get_selected_row()
             if selected_row:
                 self.tie_point = selected_row
@@ -2830,16 +2845,16 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
             # Convert to integers and validate
             deg = int(degrees)
             min_ = int(minutes)
-            
+
             # Validate degrees and minutes
             if deg < 0 or deg > 90:
                 raise ValueError(f"Degrees must be between 0 and 90 (got {deg})")
             if min_ < 0 or min_ > 59:
                 raise ValueError(f"Minutes must be between 0 and 59 (got {min_})")
-                
+
             # Calculate azimuth
             angle = deg + (min_ / 60)
-            
+
             if direction.upper() == "N" and quadrant.upper() == "E":
                 return angle
             elif direction.upper() == "S" and quadrant.upper() == "E":
@@ -2863,26 +2878,26 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
             distance = float(str(distance).replace(",", "."))
             if bearing_azimuth is None or distance < 0:
                 return None
-                
+
             # Convert azimuth from degrees to radians for trigonometric functions
             azimuth_rad = math.radians(bearing_azimuth)
-            
+
             # Calculate displacements (Easting is X, Northing is Y)
             dx = distance * math.sin(azimuth_rad)
             dy = distance * math.cos(azimuth_rad)
-            
+
             next_x = start_point[0] + dx
             next_y = start_point[1] + dy
-            
+
             return (next_x, next_y)
-            
+
         except ValueError:
             # Handle cases where distance conversion fails
             print(f"Invalid distance value: {distance}")
             return None
         except Exception as e:
-             print(f"Error calculating point: {e}")
-             return None
+            print(f"Error calculating point: {e}")
+            return None
 
     def calculate_coordinates(self):
         """Parses bearing/distance inputs from all rows and calculates the polygon coordinates.
@@ -2893,10 +2908,10 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
             # Get starting tie point coordinates (Easting, Northing)
             easting_text = self.tiePointEastingInput.text().strip().replace(",", ".")
             northing_text = self.tiePointNorthingInput.text().strip().replace(",", ".")
-            
+
             if not easting_text or not northing_text:
-                 self.wktOutput.setPlainText("Error: Tie point coordinates are required.")
-                 return []
+                self.wktOutput.setPlainText("Error: Tie point coordinates are required.")
+                return []
 
             start_easting = float(easting_text)
             start_northing = float(northing_text)
@@ -2914,7 +2929,7 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
                 if row_item and row_item.widget():
                     row_widget = row_item.widget()
                     row_layout = row_widget.layout()
-                    
+
                     if row_layout and row_layout.count() >= 5:
                         # Get values from the QLineEdit widgets in the row
                         direction = row_layout.itemAt(0).widget().text()
@@ -2927,17 +2942,17 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
                         # Check if essential fields are filled for this row
                         if not any([direction, degrees, minutes, quadrant, distance]):
                             continue
-                            
+
                         if not all([direction, degrees, minutes, quadrant, distance]):
-                             self.wktOutput.setPlainText(f"Error: Incomplete bearing input in row {i+1}.")
-                             return []
+                            self.wktOutput.setPlainText(f"Error: Incomplete bearing input in row {i + 1}.")
+                            return []
 
                         # Parse bearing and calculate the next point
                         bearing_azimuth = self.parse_bearing(direction, degrees, minutes, quadrant)
-                        
+
                         if bearing_azimuth is None:
-                             self.wktOutput.setPlainText(f"Error: Invalid bearing format in row {i+1}.")
-                             return []
+                            self.wktOutput.setPlainText(f"Error: Invalid bearing format in row {i + 1}.")
+                            return []
 
                         next_point = self.calculate_point(current_point, bearing_azimuth, distance)
 
@@ -2945,7 +2960,7 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
                             coords.append(next_point)
                             current_point = next_point
                         else:
-                            self.wktOutput.setPlainText(f"Error: Invalid distance value in row {i+1}.")
+                            self.wktOutput.setPlainText(f"Error: Invalid distance value in row {i + 1}.")
                             return []
 
             return coords
@@ -3250,11 +3265,11 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
         """Open the LLM OCR dialog for TCT image processing."""
         if not OCR_AVAILABLE:
             QMessageBox.warning(self, "OCR Unavailable",
-                               "LLM OCR dialog module could not be loaded.")
+                                "LLM OCR dialog module could not be loaded.")
             return
 
         dialog = LLMOCRDialog(self)
-        dialog.exec() 
+        dialog.exec()
 
     def resizeEvent(self, event):
         """Handles resize event for the dialog."""
@@ -3266,7 +3281,9 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
         file_path, _ = QFileDialog.getSaveFileName(
             self,
             "Save Technical Report",
-            os.path.join(os.path.expanduser("~"), f"Survey_Plan_{self.lotNumberInput.text().strip().replace(' ', '_')}.pdf"),
+            os.path.join(
+                os.path.expanduser("~"),
+                f"Survey_Plan_{self.lotNumberInput.text().strip().replace(' ', '_')}.pdf"),
             "PDF Files (*.pdf)"
         )
 
@@ -3300,7 +3317,6 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
             header_color = QColor("#14575b")
             text_color = QColor("#252b33")
             border_color = QColor("#14575b")
-            light_bg = QColor("#ffffff")
             table_header_bg = QColor("#14575b")
             table_alt_bg = QColor("#f6f8fb")
 
@@ -3310,8 +3326,6 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
             section_font = QFont("Segoe UI", 9, QFont.Weight.Bold)
             label_font = QFont("Segoe UI", 8, QFont.Weight.Bold)
             value_font = QFont("Segoe UI", 9)
-            table_header_font = QFont("Segoe UI", 7, QFont.Weight.Bold)
-            table_font = QFont("Segoe UI", 7)
             small_font = QFont("Segoe UI", 7)
 
             # Calculate layout dimensions
@@ -3438,7 +3452,7 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
                 # Draw row border
                 painter.setPen(QPen(border_color, 0.5))
                 painter.drawLine(int(table_x), int(table_y + row_height),
-                               int(table_x + table_width), int(table_y + row_height))
+                                 int(table_x + table_width), int(table_y + row_height))
                 table_y += row_height
 
             # Draw table outer border
@@ -3479,8 +3493,6 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
                     extent_width = 1
                 if extent_height <= 0:
                     extent_height = 1
-
-                extent_aspect = extent_width / extent_height
 
                 # Add padding for better visual appearance (zoom to fit with margins)
                 padding_factor = 0.35  # 35% padding on each side for comfortable fit
@@ -3523,7 +3535,9 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
                     marker_symbol = self.preview_points_layer.renderer().symbol()
                     if marker_symbol:
                         original_marker_size = marker_symbol.size()
-                        original_outline_width = marker_symbol.symbolLayer(0).strokeWidth() if marker_symbol.symbolLayerCount() > 0 else 0.2
+                        original_outline_width = (
+                            marker_symbol.symbolLayer(0).strokeWidth()
+                            if marker_symbol.symbolLayerCount() > 0 else 0.2)
                         # Scale up marker size for PDF
                         marker_symbol.setSize(original_marker_size * pdf_scale_factor)
                         if marker_symbol.symbolLayerCount() > 0:
@@ -3575,7 +3589,8 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
 
                 # === RESTORE ORIGINAL SYMBOL SIZES ===
                 # Restore marker size
-                if self.preview_points_layer and self.preview_points_layer.isValid() and original_marker_size is not None:
+                if (self.preview_points_layer and self.preview_points_layer.isValid()
+                        and original_marker_size is not None):
                     marker_symbol = self.preview_points_layer.renderer().symbol()
                     if marker_symbol:
                         marker_symbol.setSize(original_marker_size)
@@ -3685,8 +3700,6 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
             # Helper function to draw a property field with proper wrapping
             def draw_field(label, value, y_pos, is_header=False):
                 """Draw a property field with label and value, using font metrics for proper spacing."""
-                nonlocal right_y
-
                 # Check if we have space left in the column
                 if y_pos >= right_col_max_y:
                     return y_pos  # Stop drawing if we've reached the bottom
@@ -3788,7 +3801,7 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
             # Date on left (wrapped)
             date_text = f"Generated: {QDate.currentDate().toString('MMMM d, yyyy')} | QGIS Title Plotter v1.2.0"
             date_width = (page_width - 2 * margin) / 2 - 10
-            date_height = draw_wrapped_text(
+            draw_wrapped_text(
                 date_text,
                 margin,
                 footer_y - 10,
@@ -3799,9 +3812,12 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
             )
 
             # Credit on right (wrapped)
-            credit_text = "This lot report is for visual reference only and does not establish legal boundaries. For official verification, consult a licensed surveyor or geodetic engineer."
+            credit_text = (
+                "This lot report is for visual reference only and does not "
+                "establish legal boundaries. For official verification, "
+                "consult a licensed surveyor or geodetic engineer.")
             credit_width = (page_width - 2 * margin) / 2 - 10
-            credit_height = draw_wrapped_text(
+            draw_wrapped_text(
                 credit_text,
                 page_width / 2 + 10,
                 footer_y - 10,
@@ -3835,7 +3851,7 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
         folder_path = os.path.dirname(file_path)
 
         # Create message text with clickable path
-        msg_box.setText(f"Technical report has been saved successfully!")
+        msg_box.setText("Technical report has been saved successfully!")
         msg_box.setInformativeText(
             f"<b>File:</b> {file_name}<br>"
             f"<b>Location:</b> {folder_path}"
@@ -3844,7 +3860,7 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
         # Add custom buttons
         open_pdf_btn = msg_box.addButton("Open PDF", QMessageBox.ActionRole)
         open_folder_btn = msg_box.addButton("Open Folder", QMessageBox.ActionRole)
-        close_btn = msg_box.addButton("Close", QMessageBox.RejectRole)
+        msg_box.addButton("Close", QMessageBox.RejectRole)
 
         # Style the dialog
         msg_box.setStyleSheet("""
