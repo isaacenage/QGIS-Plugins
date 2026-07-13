@@ -29,7 +29,9 @@ next-env.d.ts
 
 # Local agent/AI tooling — never commit
 .claude/
+.agents/
 docs/superpowers/
+docs/research/
 CLAUDE.md
 .vercel
 .env*
