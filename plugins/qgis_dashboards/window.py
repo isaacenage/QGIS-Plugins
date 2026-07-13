@@ -52,11 +52,14 @@ from .icons import logo_icon, monochrome_icon
 from .sidebar import Sidebar
 from .minimized_bubble import MinimizedBubble
 from .dashboard_canvas import (
-    DashboardCanvas, DEFAULT_REGION_W, DEFAULT_REGION_H, MARGIN as CANVAS_MARGIN)
+    DashboardCanvas,
+    DEFAULT_REGION_W,
+    DEFAULT_REGION_H,
+    MARGIN as CANVAS_MARGIN)
 from .page_view import PageView
 from .elements import create_element, ELEMENT_LABELS
 from .elements.header_layout import materialize_header_tiles
-from .add_element_dialog import AddElementDialog, ElementConfigForm
+from .add_element_dialog import ElementConfigForm
 from .element_picker import ElementPicker
 from .settings_dialog import SettingsPanel
 from .tile_style_form import TileStyleForm
@@ -68,7 +71,8 @@ PROJECT_KEY = "layout"
 DEFAULT_COLS = 12
 DEFAULT_ROWS = 8
 DEFAULT_GAP = 0   # global element gap (logical px): cards may touch by default
-# the export/print region (the "page") — one global size for the whole dashboard
+# the export/print region (the "page") — one global size for the whole
+# dashboard
 DEFAULT_CANVAS_W = DEFAULT_REGION_W
 DEFAULT_CANVAS_H = DEFAULT_REGION_H
 CANVAS_SIZE_STEP = 40   # round a content-derived region up to a tidy multiple
@@ -241,8 +245,10 @@ class DashboardWindow(QMainWindow):
         self._tab_bar.currentChanged.connect(self._on_tab_changed)
         self._tab_bar.tabBarDoubleClicked.connect(self._rename_page_at)
         self._tab_bar.tabMoved.connect(self._on_tab_moved)
-        self._tab_bar.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self._tab_bar.customContextMenuRequested.connect(self._tab_context_menu)
+        self._tab_bar.setContextMenuPolicy(
+            Qt.ContextMenuPolicy.CustomContextMenu)
+        self._tab_bar.customContextMenuRequested.connect(
+            self._tab_context_menu)
 
         self._build_status_bar()
         self._apply_window_style()
@@ -261,7 +267,8 @@ class DashboardWindow(QMainWindow):
         # window — so connect a bound method (PyQt auto-disconnects it when the
         # window is destroyed) rather than a lambda (never auto-disconnected,
         # leaving a dangling call into a deleted DashboardBus). cleanup() also
-        # drops them explicitly on plugin unload. See _on_project_layers_changed.
+        # drops them explicitly on plugin unload. See
+        # _on_project_layers_changed.
         QgsProject.instance().layersAdded.connect(self._on_project_layers_changed)
         QgsProject.instance().layersRemoved.connect(self._on_project_layers_changed)
         self.bus.filtersChanged.connect(self._update_filter_label)
@@ -313,7 +320,8 @@ class DashboardWindow(QMainWindow):
         self.sidebar.add_action(
             "clear_filter", "Clear filter", self.bus.clear_all_filters)
         self.sidebar.add_separator()
-        # Save + the Settings hub (Appearance, About) live at the foot of the rail.
+        # Save + the Settings hub (Appearance, About) live at the foot of the
+        # rail.
         self.sidebar.add_action(
             "save", "Save dashboard to a file", self.save_to_file)
         self.sidebar.add_action("settings", "Settings", self.open_settings)
@@ -345,7 +353,8 @@ class DashboardWindow(QMainWindow):
 
     def _make_strip_button(self, icon_name, tooltip, checkable=False):
         btn = QToolButton()
-        btn.setObjectName("dashRailButton")   # reuse the rail's themed hover/focus
+        # reuse the rail's themed hover/focus
+        btn.setObjectName("dashRailButton")
         btn.setIcon(monochrome_icon(icon_name, CHROME["muted"]))
         btn.setIconSize(QSize(18, 18))
         btn.setFixedSize(30, 28)
@@ -592,7 +601,8 @@ class DashboardWindow(QMainWindow):
         self._apply_window_style()
         self.add_page("Page 1")
         self._apply_grid_to_all(DEFAULT_COLS, DEFAULT_ROWS)
-        self._set_editing_locked(False)   # a blank dashboard opens in Build mode
+        # a blank dashboard opens in Build mode
+        self._set_editing_locked(False)
         self.show_dashboard()
         self._schedule_reframe()
         self._reset_history()             # fresh dashboard → fresh timeline
@@ -696,10 +706,16 @@ class DashboardWindow(QMainWindow):
 
     def add_page(self, title, page_id=None, make_active=True):
         page_id = page_id or uuid.uuid4().hex[:8]
-        canvas = DashboardCanvas(self.bus, self.canvas_cols(), self.canvas_rows())
-        canvas.set_locked(self._editing_locked)   # honour the current layout lock
-        canvas.set_gap(self.canvas_gap())          # honour the current element gap
-        canvas.set_region(*self.canvas_size())     # honour the current page size
+        canvas = DashboardCanvas(
+            self.bus,
+            self.canvas_cols(),
+            self.canvas_rows())
+        # honour the current layout lock
+        canvas.set_locked(self._editing_locked)
+        # honour the current element gap
+        canvas.set_gap(self.canvas_gap())
+        # honour the current page size
+        canvas.set_region(*self.canvas_size())
         # tile move/resize/add/remove on this page feeds the undo timeline
         canvas.layoutChanged.connect(self._schedule_history)
         view = PageView(canvas)
@@ -825,7 +841,10 @@ class DashboardWindow(QMainWindow):
             config = {"title": ""}
         else:
             # seed a friendly default title
-            config = {"title": ELEMENT_LABELS.get(type_name, type_name.title())}
+            config = {
+                "title": ELEMENT_LABELS.get(
+                    type_name,
+                    type_name.title())}
         self.add_element(type_name, config)
 
     def add_element(self, type_name, config, grid_rect=None):
@@ -1095,7 +1114,8 @@ class DashboardWindow(QMainWindow):
 
     def _collapse_to_bubble(self):
         # Clear the minimized bit so a later plain show()/restore is clean.
-        self.setWindowState(self.windowState() & ~Qt.WindowState.WindowMinimized)
+        self.setWindowState(
+            self.windowState() & ~Qt.WindowState.WindowMinimized)
         self.hide()
         self._ensure_bubble().show_at_corner()
 
@@ -1219,7 +1239,14 @@ class DashboardWindow(QMainWindow):
         for p in data.get("pages", []):
             for cfg in p.get("elements", []):
                 g = cfg.get("grid")
-                if isinstance(g, dict) and all(k in g for k in ("x", "y", "w", "h")):
+                if isinstance(
+                    g,
+                    dict) and all(
+                    k in g for k in (
+                        "x",
+                        "y",
+                        "w",
+                        "h")):
                     max_r = max(max_r, g["x"] + g["w"])
                     max_b = max(max_b, g["y"] + g["h"])
         if max_r <= 0 or max_b <= 0:
@@ -1256,7 +1283,10 @@ class DashboardWindow(QMainWindow):
             data["pages"], data.get("header"), region_w, region_h)
 
         for p in src_pages:
-            page = self.add_page(p["title"], page_id=p["id"], make_active=False)
+            page = self.add_page(
+                p["title"],
+                page_id=p["id"],
+                make_active=False)
             page.canvas.set_grid(cols, rows)
             page.canvas.set_gap(gap)
             page.canvas.set_region(region_w, region_h)

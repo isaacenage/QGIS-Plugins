@@ -40,6 +40,7 @@ _SS = 4
 
 # --- embedded, stroke-based icons (24×24) ----------------------------------
 
+
 def _stroke(body):
     return (
         '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" '
@@ -119,7 +120,8 @@ ICONS = {
         '<rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/>'
         '<rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/>'
         '<rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/>'),
-    # spacing / element gap (an inner card inset within an outer one) — Settings nav glyph
+    # spacing / element gap (an inner card inset within an outer one) —
+    # Settings nav glyph
     "spacing": _stroke(
         '<rect x="3" y="3" width="18" height="18" rx="2.5"/>'
         '<rect x="7.5" y="7.5" width="9" height="9" rx="1.5"/>'),
@@ -330,8 +332,7 @@ LOGO_SVG = (
     'points="123.337,394.807 233.409,97.674 369.144,97.674 259.072,394.807"/>'
     '<polygon style="fill:url(#dl3);" '
     'points="221.026,492.481 331.083,195.348 466.794,195.348 356.746,492.481"/>'
-    '</g></svg>'
-)
+    '</g></svg>')
 
 
 # --- rendering -------------------------------------------------------------
@@ -358,11 +359,18 @@ def _render_px(svg_text, logical_size, tint=None, supersample=1):
             scale = min(size / vb.width(), size / vb.height())
             w = vb.width() * scale
             h = vb.height() * scale
-            renderer.render(painter, QRectF((size - w) / 2.0, (size - h) / 2.0, w, h))
+            renderer.render(
+                painter,
+                QRectF(
+                    (size - w) / 2.0,
+                    (size - h) / 2.0,
+                    w,
+                    h))
         else:
             renderer.render(painter)
         if tint is not None:
-            painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceIn)
+            painter.setCompositionMode(
+                QPainter.CompositionMode.CompositionMode_SourceIn)
             painter.fillRect(px.rect(), QColor(tint))
         painter.end()
     if supersample != 1:

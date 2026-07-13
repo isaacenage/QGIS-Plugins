@@ -11,7 +11,7 @@ import unittest
 _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(os.path.dirname(_HERE), "elements"))
 
-from style_migrate import migrate_element_style
+from style_migrate import migrate_element_style  # noqa: E402
 
 
 class _Theme(object):

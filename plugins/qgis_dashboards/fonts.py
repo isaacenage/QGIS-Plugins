@@ -17,7 +17,11 @@ import os
 
 from qgis.PyQt.QtGui import QFontDatabase
 
-_FONT_DIR = os.path.join(os.path.dirname(__file__), "resources", "fonts", "Inter")
+_FONT_DIR = os.path.join(
+    os.path.dirname(__file__),
+    "resources",
+    "fonts",
+    "Inter")
 _FONT_FILES = (
     "Inter-Regular.ttf",
     "Inter-Medium.ttf",
@@ -50,7 +54,7 @@ def ensure_fonts_registered():
         try:
             font_id = QFontDatabase.addApplicationFont(path)
         except Exception:                 # pragma: no cover - defensive
-            continue
+            font_id = -1
         if font_id == -1:
             continue
         for family in QFontDatabase.applicationFontFamilies(font_id):

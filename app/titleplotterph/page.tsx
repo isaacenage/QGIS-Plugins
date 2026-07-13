@@ -5,7 +5,7 @@ import { TPPH } from "@/lib/site";
 
 // The Title Plotter PH landing page — same editorial system as the rest of
 // the site. Copy is sourced from the plugin's own metadata.txt and README
-// (plugins/TitlePlotterPH), so figures like the tie-point count stay honest.
+// (plugins/titleplotter), so figures like the tie-point count stay honest.
 
 const FEATURES = [
   {

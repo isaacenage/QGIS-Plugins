@@ -65,7 +65,8 @@ class Sidebar(QFrame):
         # touches (the theme styles the canvas only).
         icon = monochrome_icon(icon_key, CHROME["text"])
         if icon.isNull():
-            btn.setText(tooltip[:2])          # graceful fallback if QtSvg is missing
+            # graceful fallback if QtSvg is missing
+            btn.setText(tooltip[:2])
         else:
             btn.setIcon(icon)
         btn.clicked.connect(lambda _checked=False, cb=callback: cb())

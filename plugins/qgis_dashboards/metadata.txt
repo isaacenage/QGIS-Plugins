@@ -8,7 +8,7 @@ name=QGIS Dashboard
 qgisMinimumVersion=3.22
 qgisMaximumVersion=4.99
 description=Build ArcGIS-Dashboards-style interactive dashboards from your QGIS project layers — indicators, charts, lists, a live map element, and cross-filtering selectors all wired together through a signal bus. By Isaac Enage (byZenterra).
-version=0.1
+version=0.2
 author=Isaac Enage
 email=isaacenagework@gmail.com
 
@@ -21,8 +21,11 @@ repository=https://github.com/isaacenage/QGIS-Plugins
 # Recommended items:
 
 hasProcessingProvider=no
-# Uncomment the following line and add your changelog:
-# changelog=
+changelog=0.2
+      - Security and code-quality pass: clean Bandit and detect-secrets scans,
+        flake8 cleanup (unused imports/variables, comment style, line wrapping)
+      0.1
+      - Initial release
 
 # Tags are comma separated with spaces allowed
 tags=dashboard,charts,analytics,indicator,selector,visualization,isaac enage,byzenterra

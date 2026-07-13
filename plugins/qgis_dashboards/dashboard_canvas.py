@@ -32,9 +32,11 @@ DEFAULT_W = 320      # px default new-tile size (logical)
 DEFAULT_H = 240
 MAP_W = 480          # px default size for the (larger) map tile
 MAP_H = 380
-HEADER_BAND_H = 80   # px default height for a new header tile (spans region width)
+# px default height for a new header tile (spans region width)
+HEADER_BAND_H = 80
 # the export/print region (the "page") in logical px; the canvas draws a hairline
-# frame around it, Reset Zoom fits it, and PNG/PDF export render exactly this rect
+# frame around it, Reset Zoom fits it, and PNG/PDF export render exactly
+# this rect
 DEFAULT_REGION_W = 1280
 DEFAULT_REGION_H = 720
 MIN_REGION = 320     # px floor for the region width/height
@@ -187,7 +189,8 @@ class GridTile(QFrame):
         self.canvas = canvas
         self.element = element
         # back-reference so an element can reach its host tile (e.g. to drive its
-        # own move via the tile API) — kept as a general hook for full-bleed tiles
+        # own move via the tile API) — kept as a general hook for full-bleed
+        # tiles
         setattr(element, "_grid_tile", self)
         self.x_px, self.y_px, self.w_px, self.h_px = pixel_rect
         self._prev = tuple(pixel_rect)
@@ -211,7 +214,9 @@ class GridTile(QFrame):
         self.style_btn.setAutoRaise(True)
         self.style_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.style_btn.setToolTip("Tile appearance")
-        self.style_btn.clicked.connect(lambda: self.styleRequested.emit(self.element))
+        self.style_btn.clicked.connect(
+            lambda: self.styleRequested.emit(
+                self.element))
 
         self._handles = {edge: _ResizeHandle(self, edge)
                          for edge in ("n", "s", "e", "w",
@@ -400,7 +405,8 @@ class GridTile(QFrame):
         # work in display pixels; floor at the tile minimum scaled by zoom
         z = self.canvas.zoom() or 1.0
         min_disp = max(GRIP, int(round(MIN_TILE * z)))
-        x, y, w, h = _proposed_resize(edge, self._start_geom, dx, dy, min_px=min_disp)
+        x, y, w, h = _proposed_resize(
+            edge, self._start_geom, dx, dy, min_px=min_disp)
         self.setGeometry(x, y, w, h)
 
     def end_resize(self):
@@ -507,7 +513,8 @@ class _DropOverlay(QWidget):
 
     def __init__(self, canvas):
         super().__init__(canvas)
-        self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+        self.setAttribute(
+            Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self._rect = None        # display-px (x, y, w, h) or None
         self._valid = True
         self.hide()
@@ -533,7 +540,8 @@ class _DropOverlay(QWidget):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         if self._valid:
-            fill = QColor(255, 214, 0, 70)     # translucent yellow landing zone
+            # translucent yellow landing zone
+            fill = QColor(255, 214, 0, 70)
             edge = QColor(214, 180, 0, 200)
         else:
             fill = QColor(229, 57, 53, 80)      # translucent red "won't fit"
@@ -637,10 +645,12 @@ class DashboardCanvas(QWidget):
         """
         new_w = max(MIN_REGION, int(w))
         new_h = max(MIN_REGION, int(h))
-        factor = region_scale_factor(self.region_w, self.region_h, new_w, new_h)
+        factor = region_scale_factor(
+            self.region_w, self.region_h, new_w, new_h)
         if abs(factor - 1.0) > 1e-9:
             for t in self._tiles:
-                t.x_px, t.y_px, t.w_px, t.h_px = scale_rect(t.grid_rect(), factor)
+                t.x_px, t.y_px, t.w_px, t.h_px = scale_rect(
+                    t.grid_rect(), factor)
                 t._prev = t.grid_rect()
         self.set_region(new_w, new_h)   # update region + regrow surface
         self.reflow()                   # re-place every (now rescaled) tile
@@ -721,7 +731,8 @@ class DashboardCanvas(QWidget):
         """
         z = self._zoom or 1.0
         pad2 = 2 * self._pad()
-        return max(self.width() - pad2, 0) / z, max(self.height() - pad2, 0) / z
+        return max(self.width() - pad2, 0) / \
+            z, max(self.height() - pad2, 0) / z
 
     def _content_extent(self):
         """Right/bottom extent of all tiles, in logical pixels."""
@@ -820,14 +831,17 @@ class DashboardCanvas(QWidget):
             if tname == "map":
                 pixel_rect = self.first_free(MAP_W, MAP_H)
             elif tname == "header":
-                # a banner-shaped default: spans the content width, short height
-                pixel_rect = self.first_free(self.content_size()[0], HEADER_BAND_H)
+                # a banner-shaped default: spans the content width, short
+                # height
+                pixel_rect = self.first_free(
+                    self.content_size()[0], HEADER_BAND_H)
             else:
                 pixel_rect = self.first_free(DEFAULT_W, DEFAULT_H)
         tile = GridTile(self, element, pixel_rect)
         tile.closeRequested.connect(self._on_close)
         tile.geometryCommitted.connect(self.layoutChanged)
-        tile.set_locked(self._locked)   # honour the canvas's current lock state
+        # honour the canvas's current lock state
+        tile.set_locked(self._locked)
         self._tiles.append(tile)
         tile.show()
         self.place(tile)

@@ -14,7 +14,7 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 _ROOT = os.path.dirname(_HERE)
 sys.path.insert(0, _ROOT)
 
-from theme import Theme, OVERRIDE_KEYS
+from theme import Theme, OVERRIDE_KEYS  # noqa: E402
 
 
 class TestDefaults(unittest.TestCase):
@@ -41,8 +41,14 @@ class TestAlpha(unittest.TestCase):
         self.assertEqual(t.tile_alpha(), 0.0)
 
     def test_alpha_clamped(self):
-        self.assertEqual(Theme.default().with_values(tile_opacity=250).tile_alpha(), 1.0)
-        self.assertEqual(Theme.default().with_values(tile_opacity=-5).tile_alpha(), 0.0)
+        self.assertEqual(
+            Theme.default().with_values(
+                tile_opacity=250).tile_alpha(), 1.0)
+        self.assertEqual(
+            Theme.default().with_values(
+                tile_opacity=-
+                5).tile_alpha(),
+            0.0)
 
 
 class TestRgba(unittest.TestCase):
@@ -77,7 +83,8 @@ class TestMergedOverride(unittest.TestCase):
         self.assertEqual(merged.border, "#ff0000")
 
     def test_zero_opacity_override_not_dropped(self):
-        # 0 is a meaningful override (fully transparent), must not be treated empty
+        # 0 is a meaningful override (fully transparent), must not be treated
+        # empty
         merged = Theme.default().merged_with({"tile_opacity": 0})
         self.assertEqual(merged.tile_opacity, 0)
 

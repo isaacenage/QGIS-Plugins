@@ -78,8 +78,9 @@ def publish_dashboard(window, author, description=None, skip_layers=None,
     progress("Rendering thumbnail…", 0.35)
     thumb_bytes = render_thumbnail_png(window)
     if not thumb_bytes:
-        raise PublishError("Couldn't render a dashboard thumbnail. Make sure the "
-                           "dashboard window is open with at least one page.")
+        raise PublishError(
+            "Couldn't render a dashboard thumbnail. Make sure the "
+            "dashboard window is open with at least one page.")
 
     title = _project_title()
 

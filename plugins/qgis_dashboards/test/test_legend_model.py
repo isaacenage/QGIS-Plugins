@@ -15,7 +15,7 @@ import unittest
 _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(os.path.dirname(_HERE), "elements"))
 
-import legend_model as lm
+import legend_model as lm  # noqa: E402
 
 
 class TestCategoriesToExpression(unittest.TestCase):

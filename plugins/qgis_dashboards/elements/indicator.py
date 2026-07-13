@@ -82,8 +82,13 @@ class IndicatorElement(DashboardElement):
         italic = bool(self.style_get("value_italic", False))
         self.value.apply_style(color, size, family, weight, italic)
         # top label role
-        self.apply_text_role(self.top, "top", color=th.text_muted,
-                             font=th.font_family, size=th.font_size, weight=400)
+        self.apply_text_role(
+            self.top,
+            "top",
+            color=th.text_muted,
+            font=th.font_family,
+            size=th.font_size,
+            weight=400)
         # reference / trend role — trend colors win when there is a delta
         if self._delta_sign > 0:
             force = self.style_get("trend_up_color", "#13a10e")
@@ -91,9 +96,14 @@ class IndicatorElement(DashboardElement):
             force = self.style_get("trend_down_color", "#d13438")
         else:
             force = None
-        self.apply_text_role(self.bottom, "ref", color=th.text_muted,
-                             font=th.font_family, size=th.font_size, weight=400,
-                             force_color=force)
+        self.apply_text_role(
+            self.bottom,
+            "ref",
+            color=th.text_muted,
+            font=th.font_family,
+            size=th.font_size,
+            weight=400,
+            force_color=force)
 
     def _rebuild_value_host(self, position, has_icon, gap):
         """Lay out the icon + value, honoring the configured *gap* (px).
@@ -119,19 +129,25 @@ class IndicatorElement(DashboardElement):
         if position == "top":
             # single column stretches -> AlignHCenter centers each; the gap is
             # the vertical spacing between the two rows.
-            self._vgrid.addWidget(self.icon, 0, 0, af.AlignHCenter | af.AlignBottom)
-            self._vgrid.addWidget(self.value, 1, 0, af.AlignHCenter | af.AlignTop)
+            self._vgrid.addWidget(
+                self.icon, 0, 0, af.AlignHCenter | af.AlignBottom)
+            self._vgrid.addWidget(
+                self.value, 1, 0, af.AlignHCenter | af.AlignTop)
             return
         # side-by-side: spacer columns 0 and 3 absorb the extra width so the
         # icon/value pair stays together and centered.
         self._vgrid.setColumnStretch(0, 1)
         self._vgrid.setColumnStretch(3, 1)
         if position == "right":
-            self._vgrid.addWidget(self.value, 0, 1, af.AlignRight | af.AlignVCenter)
-            self._vgrid.addWidget(self.icon, 0, 2, af.AlignLeft | af.AlignVCenter)
+            self._vgrid.addWidget(
+                self.value, 0, 1, af.AlignRight | af.AlignVCenter)
+            self._vgrid.addWidget(
+                self.icon, 0, 2, af.AlignLeft | af.AlignVCenter)
         else:   # left (default)
-            self._vgrid.addWidget(self.icon, 0, 1, af.AlignRight | af.AlignVCenter)
-            self._vgrid.addWidget(self.value, 0, 2, af.AlignLeft | af.AlignVCenter)
+            self._vgrid.addWidget(
+                self.icon, 0, 1, af.AlignRight | af.AlignVCenter)
+            self._vgrid.addWidget(
+                self.value, 0, 2, af.AlignLeft | af.AlignVCenter)
 
     # ---- data ----
 
@@ -155,7 +171,9 @@ class IndicatorElement(DashboardElement):
             self.style_get("animation", ""),
             int(self.style_get("animation_duration_ms", 900)),
             self._fmt)
-        self.value.set_value(value if isinstance(value, (int, float)) else None, text)
+        self.value.set_value(
+            value if isinstance(
+                value, (int, float)) else None, text)
 
         # reference value + delta, like ArcGIS reference/trend
         self._delta_sign = 0
@@ -166,7 +184,10 @@ class IndicatorElement(DashboardElement):
                 delta = value - ref
                 self._delta_sign = 1 if delta > 0 else (-1 if delta < 0 else 0)
                 arrow = "▲" if delta > 0 else ("▼" if delta < 0 else "—")
-                self.bottom.setText("{} {} vs ref".format(arrow, self._fmt(abs(delta))))
+                self.bottom.setText(
+                    "{} {} vs ref".format(
+                        arrow, self._fmt(
+                            abs(delta))))
         self.top.setText(self.config.get("top_text", ""))
         self.top.setVisible(bool(self.config.get("top_text")))
         self.bottom.setVisible(bool(ref_expr))

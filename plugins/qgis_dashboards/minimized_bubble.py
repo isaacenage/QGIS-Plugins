@@ -20,7 +20,8 @@ from .icons import logo_pixmap
 
 _DIAMETER = 60      # puck size in logical px
 _MARGIN = 18        # gap from the screen edges when snapped to a corner
-_DRAG_SLOP = 6      # px of movement before a press counts as a drag (not a click)
+# px of movement before a press counts as a drag (not a click)
+_DRAG_SLOP = 6
 
 # corner indices
 _TOP_LEFT, _TOP_RIGHT, _BOTTOM_LEFT, _BOTTOM_RIGHT = 0, 1, 2, 3
@@ -100,7 +101,8 @@ class MinimizedBubble(QWidget):
         p.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         d = _DIAMETER
         ring = QRect(2, 2, d - 5, d - 5)
-        # white puck with a soft hairline ring (the same #e2e6ec used for chrome)
+        # white puck with a soft hairline ring (the same #e2e6ec used for
+        # chrome)
         p.setPen(QPen(QColor("#e2e6ec"), 1))
         p.setBrush(QBrush(QColor("#ffffff")))
         p.drawEllipse(ring)

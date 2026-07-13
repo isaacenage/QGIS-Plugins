@@ -72,8 +72,10 @@ def aggregate_series(rows, cat_field, series_field, value_field, stat,
 
     cats = [c for c, _ in sorted(cat_totals.items(),
                                  key=lambda kv: kv[1], reverse=True)][:cat_cap]
-    sers = [s for s, _ in sorted(series_totals.items(),
-                                 key=lambda kv: kv[1], reverse=True)][:series_cap]
+    sers = [s for s,
+            _ in sorted(series_totals.items(),
+                        key=lambda kv: kv[1],
+                        reverse=True)][:series_cap]
     matrix = [[cells.get((c, s), 0.0) for s in sers] for c in cats]
     return {"categories": cats, "series": sers, "matrix": matrix}
 

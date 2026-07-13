@@ -10,7 +10,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from layout_util import default_locked, region_scale_factor, scale_rect
+from layout_util import default_locked, region_scale_factor, scale_rect  # noqa: E402
 
 
 class TestDefaultLocked(unittest.TestCase):
@@ -28,7 +28,8 @@ class TestDefaultLocked(unittest.TestCase):
         self.assertTrue(default_locked(blob))
 
     def test_first_page_with_elements_is_locked(self):
-        blob = {"pages": [{"id": "a", "elements": [{"__type__": "indicator"}]}]}
+        blob = {
+            "pages": [{"id": "a", "elements": [{"__type__": "indicator"}]}]}
         self.assertTrue(default_locked(blob))
 
 

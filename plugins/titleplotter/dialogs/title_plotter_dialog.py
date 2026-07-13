@@ -12,6 +12,7 @@ from qgis.PyQt.QtCore import (Qt, QPointF, pyqtSignal, QMetaType,
                               QTimer, QPoint, QRectF, QMarginsF, QDate, QUrl)
 from qgis.PyQt.QtGui import QDesktopServices
 from .. import theme, icons
+import contextlib
 import os
 import math
 import json
@@ -220,11 +221,9 @@ def calculate_polygon_area(coords):
 
     # Use Shapely if available for more robust calculation
     if Polygon is not None:
-        try:
+        with contextlib.suppress(Exception):
             polygon = Polygon(coords)
             return abs(polygon.area)
-        except Exception:
-            pass
 
     # Fallback to Shoelace formula
     n = len(coords)
@@ -2165,7 +2164,7 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
         # Check if technical description has at least 3 valid bearing rows
         valid_bearing_rows = 0
         for row in self.bearing_rows:
-            try:
+            with contextlib.suppress(Exception):
                 ns = row.directionInput.text().strip().upper()
                 deg = row.degreesInput.text().strip()
                 min_ = row.minutesInput.text().strip()
@@ -2174,8 +2173,6 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
 
                 if ns and deg and min_ and ew and dist:
                     valid_bearing_rows += 1
-            except Exception:
-                pass
 
         has_tech_desc = valid_bearing_rows >= 3
 

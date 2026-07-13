@@ -131,7 +131,10 @@ class FilterElement(DashboardElement):
         for field, _label, combo in self._labels:
             text = combo.currentText()
             if text and text != self.ALL:
-                parts.append('"{}" = \'{}\''.format(field, text.replace("'", "''")))
+                parts.append(
+                    '"{}" = \'{}\''.format(
+                        field, text.replace(
+                            "'", "''")))
         if not parts:
             return None
         return " AND ".join(parts)

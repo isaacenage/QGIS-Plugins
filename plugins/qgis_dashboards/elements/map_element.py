@@ -68,7 +68,8 @@ class _PanIdentifyTool(QgsMapToolPan):
     def __init__(self, canvas, on_identify):
         super().__init__(canvas)
         self._on_identify = on_identify   # callable(local_QPoint) -> identify
-        self._press = None      # press pos (canvas px) for click/drag detection
+        # press pos (canvas px) for click/drag detection
+        self._press = None
         self._moved = 0         # cumulative movement (px) since press
 
     def canvasPressEvent(self, e):
@@ -147,12 +148,14 @@ class MapElement(DashboardElement):
     full_bleed = True   # the canvas fills the tile: no title/description, no padding
     # handles_own_body_drag stays False (inherited): in Build mode the tile's
     # full-tile drag overlay moves the map and routes its right-click menu, just
-    # like every other tile. Use-mode pan/identify run through _PanIdentifyTool.
+    # like every other tile. Use-mode pan/identify run through
+    # _PanIdentifyTool.
 
     def __init__(self, bus, config=None, parent=None):
         super().__init__(bus, config, parent)
         # migrate the legacy bool flag to the source-mode key once, so the
-        # Configure dialog reflects the real mode and future saves use the new key.
+        # Configure dialog reflects the real mode and future saves use the new
+        # key.
         self.config["source_filter_mode"] = self._source_mode()
         self.config.pop("extent_filter_enabled", None)
         # map tiles start inert; the hosting tile applies the real mode via
@@ -173,12 +176,14 @@ class MapElement(DashboardElement):
         self.body.addWidget(self.canvas)
         # Use-mode interaction tool: left-drag pans, left-click identifies. It is
         # installed only while the tile is in Use mode (set_interactive); in Build
-        # mode the GridTile's drag overlay owns the mouse, so the map has no tool.
+        # mode the GridTile's drag overlay owns the mouse, so the map has no
+        # tool.
         self._tool = _PanIdentifyTool(self.canvas, self._identify_at)
         self._rubber = None
         self._identify_popup = None
         # the last combined-source filter we flew to, so the map's own extent
-        # pushes (which don't change it) never trigger a re-fly / feedback loop.
+        # pushes (which don't change it) never trigger a re-fly / feedback
+        # loop.
         self._last_fly_expr = None
         # the last expression we pushed as a source — guards against re-emitting
         # the same filter (esp. in relay mode, where pushing would otherwise
@@ -210,11 +215,14 @@ class MapElement(DashboardElement):
             self._source.extentsChanged.connect(self._sync_extent)
             self._source.layersChanged.connect(self.refresh)
             self._source.destinationCrsChanged.connect(self._sync_crs)
-        # the tile's own extent (driven by Use-mode pan/zoom/fly) is what we push
+        # the tile's own extent (driven by Use-mode pan/zoom/fly) is what we
+        # push
         self.canvas.extentsChanged.connect(self._schedule_filter)
-        # any pan/zoom/fly moves the view out from under a popped identify result
+        # any pan/zoom/fly moves the view out from under a popped identify
+        # result
         self.canvas.extentsChanged.connect(self._dismiss_identify)
-        # re-evaluate when the wiring graph changes (a target was (un)connected)
+        # re-evaluate when the wiring graph changes (a target was
+        # (un)connected)
         self.bus.connectionsChanged.connect(self._schedule_filter)
         self.bus.featureAction.connect(self._zoom_to)
         # fly-to target: react to any connected source's filter changing
@@ -270,7 +278,11 @@ class MapElement(DashboardElement):
         # the effective theme directly (so its surface/text/border overrides,
         # exposed as the "Identify popup" role, apply automatically).
         th = self.effective_theme()
-        self.canvas.setCanvasColor(QColor(self.style_get("map_bg", th.surface_bg)))
+        self.canvas.setCanvasColor(
+            QColor(
+                self.style_get(
+                    "map_bg",
+                    th.surface_bg)))
         self.canvas.refresh()
 
     # ---- interaction mode (Use vs Build) ----
@@ -305,7 +317,8 @@ class MapElement(DashboardElement):
         mode = self.config.get("source_filter_mode")
         if mode in ("off", "extent", "selection", "relay"):
             return mode
-        return "extent" if self.config.get("extent_filter_enabled", True) else "off"
+        return "extent" if self.config.get(
+            "extent_filter_enabled", True) else "off"
 
     def showEvent(self, event):
         # Becoming the active page's map: re-apply the current source filter so it
@@ -348,10 +361,12 @@ class MapElement(DashboardElement):
         elif mode == "selection":
             lyr = self.layer()
             ids = list(lyr.selectedFeatureIds()) if lyr is not None else []
-            expr = "$id IN ({})".format(", ".join(str(i) for i in ids)) if ids else None
+            expr = "$id IN ({})".format(", ".join(str(i)
+                                                  for i in ids)) if ids else None
         elif mode == "relay":
             # forward whatever our connected sources filter us by, so a
-            # Filter/Legend wired only to the map propagates to the map's targets.
+            # Filter/Legend wired only to the map propagates to the map's
+            # targets.
             expr = self.bus.combined_filter_for(self.id)
         else:   # "off"
             expr = None
@@ -372,7 +387,8 @@ class MapElement(DashboardElement):
     def _detach_selection_hook(self):
         if self._sel_layer is not None:
             try:
-                self._sel_layer.selectionChanged.disconnect(self._schedule_filter)
+                self._sel_layer.selectionChanged.disconnect(
+                    self._schedule_filter)
             except (TypeError, RuntimeError):
                 pass
             self._sel_layer = None
@@ -404,7 +420,8 @@ class MapElement(DashboardElement):
             clone = bound.clone()
             if clone.setSubsetString(incoming):
                 new_clone = clone
-                layers = [new_clone if lyr is bound else lyr for lyr in base_layers]
+                layers = [
+                    new_clone if lyr is bound else lyr for lyr in base_layers]
         self.canvas.setLayers(layers)
         old = self._filtered_clone
         self._filtered_clone = new_clone
@@ -422,7 +439,8 @@ class MapElement(DashboardElement):
     def _sync_extent(self, force=False):
         # Mirror the QGIS extent only in Build mode; in Use mode the tile is
         # independently navigable, so a live pan must not be overwritten by an
-        # iface extentsChanged. `force` re-mirrors on the way back to Build mode.
+        # iface extentsChanged. `force` re-mirrors on the way back to Build
+        # mode.
         if self._source is None:
             return
         if self._interactive and not force:
@@ -454,7 +472,8 @@ class MapElement(DashboardElement):
         rows = feature_summary(names, values, limit=12)
         if self._identify_popup is None:
             self._identify_popup = IdentifyPopup(self.canvas)
-        self._identify_popup.show_rows(local_point, rows, self.effective_theme())
+        self._identify_popup.show_rows(
+            local_point, rows, self.effective_theme())
 
     def _dismiss_identify(self):
         if self._identify_popup is not None:
@@ -492,7 +511,8 @@ class MapElement(DashboardElement):
         req = QgsFeatureRequest().setFilterExpression(expr).setNoAttributes()
         # scope so a spatial source's @layer / layer_property(...) resolves
         ctx = QgsExpressionContext()
-        ctx.appendScopes(QgsExpressionContextUtils.globalProjectLayerScopes(lyr))
+        ctx.appendScopes(
+            QgsExpressionContextUtils.globalProjectLayerScopes(lyr))
         req.setExpressionContext(ctx)
         rect = QgsRectangle()
         rect.setMinimal()
@@ -506,7 +526,8 @@ class MapElement(DashboardElement):
             moved = False
             if "zoom" in acts:
                 rect.scale(1.5)
-                # a reaction to a selection, not a user pan: don't push it back out
+                # a reaction to a selection, not a user pan: don't push it back
+                # out
                 self._suppress_extent_push = True
                 self.canvas.setExtent(rect)
                 moved = True
@@ -528,7 +549,8 @@ class MapElement(DashboardElement):
         centroid (converted to canvas pixels) instead of the cursor.
         """
         ctx = QgsExpressionContext()
-        ctx.appendScopes(QgsExpressionContextUtils.globalProjectLayerScopes(lyr))
+        ctx.appendScopes(
+            QgsExpressionContextUtils.globalProjectLayerScopes(lyr))
         req = QgsFeatureRequest().setFilterExpression(expr)
         req.setExpressionContext(ctx)
         feat = next(iter(lyr.getFeatures(req)), None)

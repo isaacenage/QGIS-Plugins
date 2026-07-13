@@ -20,7 +20,7 @@ import unittest
 sys.path.insert(0, os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "elements"))
 
-from header_layout import header_tile_placement, materialize_header_tiles
+from header_layout import header_tile_placement, materialize_header_tiles  # noqa: E402
 
 
 class HeaderTilePlacementTest(unittest.TestCase):
@@ -28,25 +28,30 @@ class HeaderTilePlacementTest(unittest.TestCase):
 
     def test_top_places_band_and_shifts_tiles_down(self):
         rect, shift, region = header_tile_placement("top", 80, 1000, 600)
-        self.assertEqual(rect, (0, 0, 1000, 80))      # full-width band at the top
-        self.assertEqual(shift, (0, 80))              # existing tiles move down
+        # full-width band at the top
+        self.assertEqual(rect, (0, 0, 1000, 80))
+        # existing tiles move down
+        self.assertEqual(shift, (0, 80))
         self.assertEqual(region, (1000, 680))         # region grows in height
 
     def test_bottom_places_band_and_leaves_tiles(self):
         rect, shift, region = header_tile_placement("bottom", 80, 1000, 600)
-        self.assertEqual(rect, (0, 600, 1000, 80))    # band below the old region
+        # band below the old region
+        self.assertEqual(rect, (0, 600, 1000, 80))
         self.assertEqual(shift, (0, 0))               # tiles unchanged
         self.assertEqual(region, (1000, 680))
 
     def test_left_places_band_and_shifts_tiles_right(self):
         rect, shift, region = header_tile_placement("left", 120, 1000, 600)
-        self.assertEqual(rect, (0, 0, 120, 600))      # full-height band at the left
+        # full-height band at the left
+        self.assertEqual(rect, (0, 0, 120, 600))
         self.assertEqual(shift, (120, 0))             # tiles move right
         self.assertEqual(region, (1120, 600))         # region grows in width
 
     def test_right_places_band_and_leaves_tiles(self):
         rect, shift, region = header_tile_placement("right", 120, 1000, 600)
-        self.assertEqual(rect, (1000, 0, 120, 600))   # band right of the old region
+        # band right of the old region
+        self.assertEqual(rect, (1000, 0, 120, 600))
         self.assertEqual(shift, (0, 0))
         self.assertEqual(region, (1120, 600))
 
@@ -66,8 +71,8 @@ class MaterializeHeaderTilesTest(unittest.TestCase):
         return p
 
     def test_global_header_added_to_each_page_as_top_tile(self):
-        pages = [self._page(elements=[{"__type__": "indicator",
-                                       "grid": {"x": 0, "y": 0, "w": 200, "h": 150}}])]
+        pages = [self._page(elements=[{"__type__": "indicator", "grid": {
+                            "x": 0, "y": 0, "w": 200, "h": 150}}])]
         glob = {"title": "Brand", "anchor": "top", "thickness": 80,
                 "font_size": 22, "logo_slot": "left"}
         new_pages, w, h = materialize_header_tiles(pages, glob, 1000, 600)
@@ -98,8 +103,8 @@ class MaterializeHeaderTilesTest(unittest.TestCase):
         self.assertEqual((w, h), (1000, 650))
 
     def test_no_header_leaves_page_unchanged(self):
-        pages = [self._page(elements=[{"__type__": "chart",
-                                       "grid": {"x": 0, "y": 0, "w": 100, "h": 100}}])]
+        pages = [self._page(elements=[{"__type__": "chart", "grid": {
+                            "x": 0, "y": 0, "w": 100, "h": 100}}])]
         new_pages, w, h = materialize_header_tiles(pages, None, 1000, 600)
         self.assertEqual(new_pages[0]["elements"],
                          [{"__type__": "chart",
@@ -111,8 +116,10 @@ class MaterializeHeaderTilesTest(unittest.TestCase):
         page_a = {"id": "a", "title": "A", "connections": {}, "elements": [],
                   "header": {"title": "H", "anchor": "top", "thickness": 80}}
         page_b = {"id": "b", "title": "B", "connections": {}, "elements": []}
-        new_pages, w, h = materialize_header_tiles([page_a, page_b], None, 1000, 600)
-        self.assertEqual((w, h), (1000, 680))   # both pages share the grown region
+        new_pages, w, h = materialize_header_tiles(
+            [page_a, page_b], None, 1000, 600)
+        # both pages share the grown region
+        self.assertEqual((w, h), (1000, 680))
 
 
 if __name__ == "__main__":

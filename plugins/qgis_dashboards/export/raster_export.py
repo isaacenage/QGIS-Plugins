@@ -57,7 +57,8 @@ def _ensure_ext(path, ext):
 
 def _safe_filename(name, fallback):
     """Sanitize a page title into a filesystem-safe stem."""
-    name = re.sub(r'[<>:"/\\|?*\x00-\x1f]', "_", (name or "").strip()).strip(". ")
+    name = re.sub(r'[<>:"/\\|?*\x00-\x1f]', "_",
+                  (name or "").strip()).strip(". ")
     return name or fallback
 
 
@@ -86,7 +87,8 @@ class ExportScopeDialog(QDialog):
 
         root.addWidget(QLabel("Which pages do you want to export?"))
 
-        self._all_radio = QRadioButton("All pages ({})".format(len(self._pages)))
+        self._all_radio = QRadioButton(
+            "All pages ({})".format(len(self._pages)))
         self._all_radio.setChecked(True)
         root.addWidget(self._all_radio)
 
@@ -105,7 +107,8 @@ class ExportScopeDialog(QDialog):
 
         self._one_radio.toggled.connect(self._combo.setEnabled)
 
-        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         root.addWidget(buttons)
@@ -253,6 +256,9 @@ def export_pdf(window, parent=None):
     path = _ensure_ext(path, "pdf")
 
     if not _write_pdf(pages, path):
-        QMessageBox.critical(parent, "Export to PDF", "Could not render the pages.")
+        QMessageBox.critical(
+            parent,
+            "Export to PDF",
+            "Could not render the pages.")
         return
     QMessageBox.information(parent, "Export to PDF", "Saved:\n" + path)

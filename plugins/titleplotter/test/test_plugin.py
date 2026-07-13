@@ -59,7 +59,8 @@ N 20 44 W - 150.00M"""
             'distance': 100.00
         }
 
-        new_point = self.dialog._calculate_coordinates(start_point, bearing, 100)
+        new_point = self.dialog._calculate_coordinates(
+            start_point, bearing, 100)
         self.assertIsNotNone(new_point)
         self.assertIsInstance(new_point, QgsPointXY)
 

@@ -29,8 +29,15 @@ use and tests.
 
 from qgis.PyQt.QtCore import Qt, pyqtSignal
 from qgis.PyQt.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QGroupBox, QCheckBox, QLabel, QScrollArea,
-    QWidget, QDialogButtonBox,
+    QDialog,
+    QVBoxLayout,
+    QHBoxLayout,
+    QGroupBox,
+    QCheckBox,
+    QLabel,
+    QScrollArea,
+    QWidget,
+    QDialogButtonBox,
 )
 
 
@@ -48,7 +55,8 @@ class ConnectionsForm(QWidget):
         # (peer_id, direction) -> QCheckBox, where direction is "out" (this
         # element filters the peer) or "in" (the peer filters this element).
         self._checks = {}
-        # action rows (edges whose target is a map): (src_id, tgt_id, {action:cb})
+        # action rows (edges whose target is a map): (src_id, tgt_id,
+        # {action:cb})
         self._action_rows = []
 
         others = [e for e in elements if e.id != element.id]
@@ -64,7 +72,8 @@ class ConnectionsForm(QWidget):
         intro = QLabel(
             "Choose how <b>{}</b> connects to the other tiles on this page. "
             "Selecting a value in a source tile cross-filters every tile it is "
-            "wired to.".format(element.display_name()))
+            "wired to.".format(
+                element.display_name()))
         intro.setWordWrap(True)
         intro.setProperty("connHint", True)
         root.addWidget(intro)
@@ -101,7 +110,8 @@ class ConnectionsForm(QWidget):
 
         col.addStretch(1)
 
-    # action columns shown when an edge's target is a map (source→action→target)
+    # action columns shown when an edge's target is a map
+    # (source→action→target)
     ACTION_LABELS = (("filter", "Filter"), ("zoom", "Zoom"), ("pan", "Pan"),
                      ("flash", "Flash"), ("show_popup", "Show pop-up"))
 

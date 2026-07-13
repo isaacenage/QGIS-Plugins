@@ -57,7 +57,8 @@ def migrate_element_style(config, type_name, theme=None):
     if type_name == "text" and "heading" in config:
         if config.pop("heading"):
             style.setdefault("text_weight", 700)
-            px = int(round(theme.title_size * 1.7)) if theme is not None else 22
+            px = int(round(theme.title_size * 1.7)
+                     ) if theme is not None else 22
             style.setdefault("text_px", px)
 
     if style:

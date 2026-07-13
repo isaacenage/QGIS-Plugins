@@ -12,6 +12,7 @@ from qgis.PyQt.QtWidgets import (
 from qgis.PyQt.QtGui import QPixmap, QImage, QDesktopServices
 from qgis.PyQt.QtCore import Qt, QBuffer, QIODevice, QSettings, QUrl, QThread, pyqtSignal, QTimer
 from .. import theme
+import contextlib
 import os
 import re
 import json
@@ -969,12 +970,11 @@ CRITICAL:
 
     def extract_retry_time(self, error_body):
         """Extract retry wait time from error message."""
-        try:
-            match = re.search(r'retry in (\d+(?:\.\d+)?)', error_body, re.IGNORECASE)
+        with contextlib.suppress(Exception):
+            match = re.search(
+                r'retry in (\d+(?:\.\d+)?)', error_body, re.IGNORECASE)
             if match:
                 return float(match.group(1))
-        except Exception:
-            pass
         return 60
 
     def show_api_error(self, code, error_body):

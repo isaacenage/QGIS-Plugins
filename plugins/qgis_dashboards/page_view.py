@@ -60,8 +60,9 @@ class _CanvasScroll(QScrollArea):
         Reset Zoom frames the whole page (the region) in the viewport, so the
         user always lands on a view of the exact rectangle that will export.
         """
-        region = self.canvas.region_size() if hasattr(self.canvas, "region_size") \
-            else (self.canvas.width(), self.canvas.height())
+        region = self.canvas.region_size() if hasattr(
+            self.canvas, "region_size") else (
+            self.canvas.width(), self.canvas.height())
         vp = self.viewport()
         z = fit_zoom(region, (vp.width(), vp.height()))
         return self.set_zoom(z)

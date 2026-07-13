@@ -191,7 +191,8 @@ class InspectorPanel(QFrame):
             content.setParent(None)
             content.deleteLater()
             # restore default body padding for the next editor
-            self._content_layout.setContentsMargins(*self._default_content_margins)
+            self._content_layout.setContentsMargins(
+                *self._default_content_margins)
             self.hide()
             self.closed.emit()
 

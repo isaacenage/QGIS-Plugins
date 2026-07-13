@@ -16,8 +16,8 @@ _ROOT = os.path.dirname(_HERE)
 sys.path.insert(0, os.path.join(_ROOT, "elements"))
 sys.path.insert(0, _ROOT)
 
-import style_schema as ss
-from theme import Theme
+import style_schema as ss  # noqa: E402
+from theme import Theme  # noqa: E402
 
 # every element type the dashboard ships (mirrors elements/__init__.py)
 ELEMENT_TYPES = ["indicator", "chart", "list", "pivot", "map",

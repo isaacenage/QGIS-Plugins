@@ -21,6 +21,8 @@ Implementation notes:
     needs no Connections wiring.
 """
 
+import contextlib
+
 from qgis.PyQt.QtCore import Qt, QSize
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QListWidget, QListWidgetItem, QAbstractItemView
@@ -90,7 +92,8 @@ class LegendElement(DashboardElement):
         if canvas is not None:
             return [lyr for lyr in canvas.layers()
                     if isinstance(lyr, QgsVectorLayer)]
-        # fallback when no iface canvas (e.g. tests): every project vector layer
+        # fallback when no iface canvas (e.g. tests): every project vector
+        # layer
         return [lyr for lyr in QgsProject.instance().mapLayers().values()
                 if isinstance(lyr, QgsVectorLayer)]
 
@@ -126,7 +129,8 @@ class LegendElement(DashboardElement):
 
     def _add_layer_header(self, name):
         item = QListWidgetItem(name)
-        item.setFlags(Qt.ItemFlag.NoItemFlags)   # a non-interactive group label
+        # a non-interactive group label
+        item.setFlags(Qt.ItemFlag.NoItemFlags)
         font = item.font()
         font.setBold(True)
         item.setFont(font)
@@ -136,11 +140,9 @@ class LegendElement(DashboardElement):
         item = QListWidgetItem("    " + (leg.label() or ""))
         symbol = leg.symbol()
         if symbol is not None:                    # legend symbols can be null
-            try:
+            with contextlib.suppress(Exception):  # preview render may fail
                 pix = QgsSymbolLayerUtils.symbolPreviewPixmap(symbol, _SWATCH)
                 item.setIcon(QIcon(pix))
-            except Exception:
-                pass
         key = leg.ruleKey()
         if checkable and key:
             item.setFlags(Qt.ItemFlag.ItemIsUserCheckable

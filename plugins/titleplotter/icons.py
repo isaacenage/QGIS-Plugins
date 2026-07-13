@@ -188,11 +188,18 @@ def _render_px(svg_text, logical_size, tint=None, supersample=1):
             scale = min(size / vb.width(), size / vb.height())
             w = vb.width() * scale
             h = vb.height() * scale
-            renderer.render(painter, QRectF((size - w) / 2.0, (size - h) / 2.0, w, h))
+            renderer.render(
+                painter,
+                QRectF(
+                    (size - w) / 2.0,
+                    (size - h) / 2.0,
+                    w,
+                    h))
         else:
             renderer.render(painter)
         if tint is not None:
-            painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceIn)
+            painter.setCompositionMode(
+                QPainter.CompositionMode.CompositionMode_SourceIn)
             painter.fillRect(px.rect(), QColor(tint))
         painter.end()
     if supersample != 1:

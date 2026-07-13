@@ -23,8 +23,8 @@ import os
 
 from qgis.PyQt.QtCore import Qt, pyqtSignal, QDateTime
 from qgis.PyQt.QtWidgets import (
-    QFrame, QLabel, QVBoxLayout, QHBoxLayout, QGridLayout, QWidget,
-    QScrollArea, QSizePolicy, QGraphicsDropShadowEffect,
+    QFrame, QLabel, QVBoxLayout, QGridLayout, QWidget,
+    QScrollArea, QGraphicsDropShadowEffect,
 )
 from qgis.PyQt.QtGui import QColor
 
@@ -70,10 +70,14 @@ class _BaseCard(QFrame):
         return (
             "QFrame#%(n)s { background:%(bg)s; border:1px solid %(border)s;"
             " border-radius:%(r)dpx; }"
-            "QFrame#%(n)s:hover { background:%(soft)s; border-color:%(accent)s; }"
-            % {"n": object_name, "bg": CHROME["surface"], "border": CHROME["border"],
-               "r": 12, "soft": CHROME["brand_soft"], "accent": CHROME["accent"]}
-        )
+            "QFrame#%(n)s:hover { background:%(soft)s; border-color:%(accent)s; }" %
+            {
+                "n": object_name,
+                "bg": CHROME["surface"],
+                "border": CHROME["border"],
+                "r": 12,
+                "soft": CHROME["brand_soft"],
+                "accent": CHROME["accent"]})
 
 
 class _ActionCard(_BaseCard):
@@ -195,16 +199,18 @@ class _RecentCard(_BaseCard):
     def apply_theme(self, theme):
         self._theme = theme
         self.setStyleSheet(
-            self._card_qss("startRecentCard")
-            + ("QFrame#startRecentPreview { background:%(soft)s; border:none;"
-               " border-top-left-radius:%(r)dpx; border-top-right-radius:%(r)dpx; }"
-               "QWidget#startRecentBody { background:transparent; border:none; }"
-               "QLabel#startRecentTitle { color:%(text)s; font-size:13px;"
-               " font-weight:600; background:transparent; }"
-               "QLabel#startRecentText { color:%(muted)s; font-size:11px;"
-               " background:transparent; }"
-               % {"soft": CHROME["brand_soft"], "r": 12,
-                  "text": CHROME["text"], "muted": CHROME["muted"]}))
+            self._card_qss("startRecentCard") + (
+                "QFrame#startRecentPreview { background:%(soft)s; border:none;"
+                " border-top-left-radius:%(r)dpx; border-top-right-radius:%(r)dpx; }"
+                "QWidget#startRecentBody { background:transparent; border:none; }"
+                "QLabel#startRecentTitle { color:%(text)s; font-size:13px;"
+                " font-weight:600; background:transparent; }"
+                "QLabel#startRecentText { color:%(muted)s; font-size:11px;"
+                " background:transparent; }" % {
+                    "soft": CHROME["brand_soft"],
+                    "r": 12,
+                    "text": CHROME["text"],
+                    "muted": CHROME["muted"]}))
 
 
 class _CardGrid(QWidget):
@@ -376,8 +382,10 @@ class StartView(QWidget):
             "#startSection { color:%(text)s; font-size:13px; font-weight:600;"
             " background:transparent; }"
             "#startEmpty { color:%(muted)s; font-size:12px;"
-            " background:transparent; }"
-            % {"bg": CHROME["bg"], "text": CHROME["text"], "muted": CHROME["muted"]})
+            " background:transparent; }" % {
+                "bg": CHROME["bg"],
+                "text": CHROME["text"],
+                "muted": CHROME["muted"]})
         for card in getattr(self, "_action_cards", []):
             card.apply_theme(theme)
         for card in getattr(self, "_recent_cards", []):

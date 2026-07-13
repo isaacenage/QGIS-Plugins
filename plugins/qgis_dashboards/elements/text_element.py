@@ -42,7 +42,8 @@ class TextElement(DashboardElement):
         self._label.setObjectName("textTile")
         self._label.setWordWrap(True)
         self._label.setMinimumSize(1, 1)
-        self._label.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
+        self._label.setTextInteractionFlags(
+            Qt.TextInteractionFlag.NoTextInteraction)
         self.body.addWidget(self._label, 1)
 
         self.apply_theme()
@@ -67,9 +68,15 @@ class TextElement(DashboardElement):
                 .format(color=th.text_muted, family=th.font_stack(),
                         size=th.font_size))
             return
-        # full text role: font / size / color / weight / italic (align set above)
-        self.apply_text_role(self._label, "text", color=th.text,
-                             font=th.font_family, size=th.font_size, weight=400)
+        # full text role: font / size / color / weight / italic (align set
+        # above)
+        self.apply_text_role(
+            self._label,
+            "text",
+            color=th.text,
+            font=th.font_family,
+            size=th.font_size,
+            weight=400)
 
     # ---- in-place editing ----
 

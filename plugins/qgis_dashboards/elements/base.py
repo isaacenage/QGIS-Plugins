@@ -56,13 +56,13 @@ class DashboardElement(QFrame):
     type_name = "element"
     is_filter_source = False   # pushes filters onto the bus
     accepts_filter = True      # re-queries when a connected source filters
-    full_bleed = False         # when True the visualization fills the tile
-                               # edge-to-edge: no title/description chrome and
-                               # no internal padding (e.g. the live map mirror)
-    handles_own_body_drag = False   # when True the element drives its own
-                               # body drag in Build mode (e.g. the map), so the
-                               # tile keeps a thin top drag strip instead of the
-                               # full-tile drag overlay every other tile gets
+    # full_bleed: when True the visualization fills the tile edge-to-edge —
+    # no title/description chrome and no internal padding (e.g. the live map).
+    full_bleed = False
+    # handles_own_body_drag: when True the element drives its own body drag in
+    # Build mode (e.g. the map), so the tile keeps a thin top drag strip
+    # instead of the full-tile drag overlay every other tile gets.
+    handles_own_body_drag = False
 
     def __init__(self, bus, config=None, parent=None):
         super().__init__(parent)
@@ -103,7 +103,10 @@ class DashboardElement(QFrame):
             self._outer.setSpacing(6)
 
         # --- title area (omitted entirely for full-bleed tiles) ---
-        self.title_label = QLabel(self.config.get("title", self.type_name.title()))
+        self.title_label = QLabel(
+            self.config.get(
+                "title",
+                self.type_name.title()))
         self.title_label.setObjectName("elementTitle")
         if self.full_bleed:
             self.title_label.hide()
@@ -157,8 +160,18 @@ class DashboardElement(QFrame):
                 return val
         return default
 
-    def apply_text_role(self, label, prefix, *, color, font, size,
-                        weight=400, italic=False, align=None, force_color=None):
+    def apply_text_role(
+            self,
+            label,
+            prefix,
+            *,
+            color,
+            font,
+            size,
+            weight=400,
+            italic=False,
+            align=None,
+            force_color=None):
         """Apply a styled text *role* to *label* from ``config["style"]``.
 
         Reads ``{prefix}_color/_font/_px/_weight/_italic`` (and ``_align`` when
@@ -243,7 +256,10 @@ class DashboardElement(QFrame):
         data so a configuration change is reflected without recreating the tile.
         Subclasses that cache config in ``__init__`` override to extend this.
         """
-        self.title_label.setText(self.config.get("title", self.type_name.title()))
+        self.title_label.setText(
+            self.config.get(
+                "title",
+                self.type_name.title()))
         desc = self.config.get("description")
         self.desc_label.setText(desc or "")
         if not self.full_bleed:
@@ -310,7 +326,8 @@ class DashboardElement(QFrame):
         flt = self._combined_filter()
         expr = QgsExpression(inject_filter(expression_str, flt))
         ctx = QgsExpressionContext()
-        ctx.appendScopes(QgsExpressionContextUtils.globalProjectLayerScopes(lyr))
+        ctx.appendScopes(
+            QgsExpressionContextUtils.globalProjectLayerScopes(lyr))
         if flt is not None and ctx.lastScope() is not None:
             ctx.lastScope().setVariable("dashboard_filter", flt)
         val = expr.evaluate(ctx)

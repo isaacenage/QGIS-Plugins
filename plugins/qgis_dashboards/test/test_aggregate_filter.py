@@ -15,7 +15,7 @@ import unittest
 _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(os.path.dirname(_HERE), "elements"))
 
-import aggregate_filter as af
+import aggregate_filter as af  # noqa: E402
 
 F = '"region" = \'A\''
 
@@ -61,7 +61,8 @@ class TestInjectFilter(unittest.TestCase):
         self.assertEqual(af.inject_filter(expr, F), expr)
 
     def test_field_name_with_paren_like_text_in_quotes(self):
-        # a parenthesis inside a quoted field/string must not confuse the scanner
+        # a parenthesis inside a quoted field/string must not confuse the
+        # scanner
         expr = '''sum("pop") || ' (total)' '''
         self.assertEqual(
             af.inject_filter(expr, F),

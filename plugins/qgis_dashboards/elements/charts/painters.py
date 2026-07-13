@@ -64,7 +64,8 @@ class _ChartPainter(QWidget):
 
     def set_theme(self, theme):
         # chart background honors the element opacity so a translucent tile shows
-        # the canvas through the chart (the chart widget composites over the tile).
+        # the canvas through the chart (the chart widget composites over the
+        # tile).
         bg = QColor(theme.chart_bg)
         try:
             bg.setAlphaF(theme.tile_alpha())
@@ -151,16 +152,29 @@ class BarPainter(_ChartPainter):
             h = plot_h * (float(v) / max_v)
             y = plot_bottom - h
             color = self._bar_sel if cat == self._selected else self._color(i)
-            p.fillRect(QRectF(slot_left + (slot_w - bar_w) / 2, y, bar_w, h), color)
+            p.fillRect(
+                QRectF(slot_left + (slot_w - bar_w) / 2, y, bar_w, h), color)
             if self._show_values:
                 p.setPen(self._text)
-                p.drawText(QRectF(slot_left, y - top_pad, slot_w, top_pad),
-                           Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignBottom,
-                           fmt_num(v))
-            cat_txt = fm.elidedText(str(cat), Qt.TextElideMode.ElideRight, int(slot_w))
+                p.drawText(
+                    QRectF(
+                        slot_left,
+                        y - top_pad,
+                        slot_w,
+                        top_pad),
+                    Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignBottom,
+                    fmt_num(v))
+            cat_txt = fm.elidedText(
+                str(cat), Qt.TextElideMode.ElideRight, int(slot_w))
             p.setPen(self._muted)
-            p.drawText(QRectF(slot_left, plot_bottom + 2, slot_w, label_h),
-                       Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop, cat_txt)
+            p.drawText(
+                QRectF(
+                    slot_left,
+                    plot_bottom + 2,
+                    slot_w,
+                    label_h),
+                Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop,
+                cat_txt)
         p.end()
 
     def mousePressEvent(self, e):
@@ -204,16 +218,28 @@ class BarHPainter(_ChartPainter):
             w = plot_w * (float(v) / max_v)
             y = slot_top + (slot_h - bar_h) / 2
             color = self._bar_sel if cat == self._selected else self._color(i)
-            cat_txt = fm.elidedText(str(cat), Qt.TextElideMode.ElideRight, label_w - 6)
+            cat_txt = fm.elidedText(
+                str(cat), Qt.TextElideMode.ElideRight, label_w - 6)
             p.setPen(self._muted)
-            p.drawText(QRectF(rect.left(), slot_top, label_w - 6, slot_h),
-                       Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, cat_txt)
+            p.drawText(
+                QRectF(
+                    rect.left(),
+                    slot_top,
+                    label_w - 6,
+                    slot_h),
+                Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+                cat_txt)
             p.fillRect(QRectF(plot_left, y, w, bar_h), color)
             if self._show_values:
                 p.setPen(self._text)
-                p.drawText(QRectF(plot_left + w + 4, slot_top, val_w - 6, slot_h),
-                           Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
-                           fmt_num(v))
+                p.drawText(
+                    QRectF(
+                        plot_left + w + 4,
+                        slot_top,
+                        val_w - 6,
+                        slot_h),
+                    Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+                    fmt_num(v))
         p.end()
 
     def mousePressEvent(self, e):
@@ -292,10 +318,17 @@ class LinePainter(_ChartPainter):
             p.setBrush(self._bar_sel if sel else self._color(0))
             p.setPen(QPen(self._bg, 1))
             p.drawEllipse(QPointF(x, y), r, r)
-            cat_txt = fm.elidedText(str(cat), Qt.TextElideMode.ElideRight, int(slot_w))
+            cat_txt = fm.elidedText(
+                str(cat), Qt.TextElideMode.ElideRight, int(slot_w))
             p.setPen(self._muted)
-            p.drawText(QRectF(x - slot_w / 2, plot_bottom + 2, slot_w, label_h),
-                       Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop, cat_txt)
+            p.drawText(
+                QRectF(
+                    x - slot_w / 2,
+                    plot_bottom + 2,
+                    slot_w,
+                    label_h),
+                Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop,
+                cat_txt)
         p.end()
 
     def mousePressEvent(self, e):
@@ -353,7 +386,11 @@ class PiePainter(_ChartPainter):
                 mid = math.radians(start + span / 2.0)
                 ox = math.cos(mid) * EXPLODE_PX
                 oy = -math.sin(mid) * EXPLODE_PX
-            box = QRectF(cx - radius + ox, cy - radius + oy, diameter, diameter)
+            box = QRectF(
+                cx - radius + ox,
+                cy - radius + oy,
+                diameter,
+                diameter)
             p.setBrush(self._color(i))
             p.setPen(QColor("#ffffff"))
             p.drawPie(box, int(round(start * 16)), int(round(span * 16)))
@@ -383,10 +420,20 @@ class PiePainter(_ChartPainter):
             p.setPen(Qt.PenStyle.NoPen)
             p.drawRect(QRectF(area.left(), y + 3, 11, 11))
             p.setPen(self._text)
-            txt = fm.elidedText("{} ({})".format(label, fmt_num(value)),
-                                Qt.TextElideMode.ElideRight, int(area.width() - 18))
-            p.drawText(QRectF(area.left() + 18, y, area.width() - 18, row_h),
-                       Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, txt)
+            txt = fm.elidedText(
+                "{} ({})".format(
+                    label, fmt_num(value)), Qt.TextElideMode.ElideRight, int(
+                    area.width() - 18))
+            p.drawText(
+                QRectF(
+                    area.left() +
+                    18,
+                    y,
+                    area.width() -
+                    18,
+                    row_h),
+                Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+                txt)
             y += row_h
 
     def mousePressEvent(self, e):
@@ -478,12 +525,25 @@ class LollipopPainter(BarPainter):
             p.setBrush(color)
             p.drawEllipse(QPointF(cx, y), r, r)
             p.setPen(self._text)
-            p.drawText(QRectF(cx - slot_w / 2, y - top_pad, slot_w, top_pad),
-                       Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignBottom, fmt_num(v))
-            cat_txt = fm.elidedText(str(cat), Qt.TextElideMode.ElideRight, int(slot_w))
+            p.drawText(
+                QRectF(
+                    cx - slot_w / 2,
+                    y - top_pad,
+                    slot_w,
+                    top_pad),
+                Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignBottom,
+                fmt_num(v))
+            cat_txt = fm.elidedText(
+                str(cat), Qt.TextElideMode.ElideRight, int(slot_w))
             p.setPen(self._muted)
-            p.drawText(QRectF(cx - slot_w / 2, plot_bottom + 2, slot_w, label_h),
-                       Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop, cat_txt)
+            p.drawText(
+                QRectF(
+                    cx - slot_w / 2,
+                    plot_bottom + 2,
+                    slot_w,
+                    label_h),
+                Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop,
+                cat_txt)
         p.end()
 
 
@@ -515,18 +575,31 @@ class LollipopHPainter(BarHPainter):
             w = plot_w * (float(v) / max_v)
             color = self._bar_sel if cat == self._selected else self._color(i)
             r = 6 if cat == self._selected else 5
-            cat_txt = fm.elidedText(str(cat), Qt.TextElideMode.ElideRight, label_w - 6)
+            cat_txt = fm.elidedText(
+                str(cat), Qt.TextElideMode.ElideRight, label_w - 6)
             p.setPen(self._muted)
-            p.drawText(QRectF(rect.left(), slot_top, label_w - 6, slot_h),
-                       Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, cat_txt)
+            p.drawText(
+                QRectF(
+                    rect.left(),
+                    slot_top,
+                    label_w - 6,
+                    slot_h),
+                Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+                cat_txt)
             p.setPen(QPen(color, 2))
             p.drawLine(QPointF(plot_left, cy), QPointF(plot_left + w, cy))
             p.setPen(Qt.PenStyle.NoPen)
             p.setBrush(color)
             p.drawEllipse(QPointF(plot_left + w, cy), r, r)
             p.setPen(self._text)
-            p.drawText(QRectF(plot_left + w + 8, slot_top, val_w - 6, slot_h),
-                       Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, fmt_num(v))
+            p.drawText(
+                QRectF(
+                    plot_left + w + 8,
+                    slot_top,
+                    val_w - 6,
+                    slot_h),
+                Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+                fmt_num(v))
         p.end()
 
 
@@ -557,10 +630,17 @@ class DotPainter(BarHPainter):
             cy = slot_top + slot_h / 2.0
             x = plot_left + plot_w * (float(v) / max_v)
             color = self._bar_sel if cat == self._selected else self._color(i)
-            cat_txt = fm.elidedText(str(cat), Qt.TextElideMode.ElideRight, label_w - 6)
+            cat_txt = fm.elidedText(
+                str(cat), Qt.TextElideMode.ElideRight, label_w - 6)
             p.setPen(self._muted)
-            p.drawText(QRectF(rect.left(), slot_top, label_w - 6, slot_h),
-                       Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, cat_txt)
+            p.drawText(
+                QRectF(
+                    rect.left(),
+                    slot_top,
+                    label_w - 6,
+                    slot_h),
+                Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+                cat_txt)
             p.setPen(QPen(self._grid, 1, Qt.PenStyle.DotLine))
             p.drawLine(QPointF(plot_left, cy), QPointF(x, cy))
             p.setPen(Qt.PenStyle.NoPen)
@@ -568,8 +648,14 @@ class DotPainter(BarHPainter):
             r = 7 if cat == self._selected else 5
             p.drawEllipse(QPointF(x, cy), r, r)
             p.setPen(self._text)
-            p.drawText(QRectF(x + 8, slot_top, val_w - 6, slot_h),
-                       Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, fmt_num(v))
+            p.drawText(
+                QRectF(
+                    x + 8,
+                    slot_top,
+                    val_w - 6,
+                    slot_h),
+                Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+                fmt_num(v))
         p.end()
 
 
@@ -721,8 +807,14 @@ class RadarPainter(_PolarPainter):
             ly = cy - math.sin(ang) * (radius + 12)
             txt = fm.elidedText(str(cat), Qt.TextElideMode.ElideRight, 70)
             p.setPen(self._muted)
-            p.drawText(QRectF(lx - 36, ly - fm.height() / 2.0, 72, fm.height()),
-                       Qt.AlignmentFlag.AlignCenter, txt)
+            p.drawText(
+                QRectF(
+                    lx - 36,
+                    ly - fm.height() / 2.0,
+                    72,
+                    fm.height()),
+                Qt.AlignmentFlag.AlignCenter,
+                txt)
 
         if pts:
             fill = QColor(self._color(0))
@@ -734,7 +826,8 @@ class RadarPainter(_PolarPainter):
             p.setPen(Qt.PenStyle.NoPen)
             for i, pt in enumerate(pts):
                 cat = self._data[i][0]
-                p.setBrush(self._bar_sel if cat == self._selected else self._color(0))
+                p.setBrush(self._bar_sel if cat ==
+                           self._selected else self._color(0))
                 p.drawEllipse(pt, 4, 4)
         p.end()
 
@@ -768,7 +861,6 @@ class FunnelPainter(_ChartPainter):
 
         n = len(self._data)
         max_v = max((float(v) for _, v in self._data), default=0) or 1.0
-        fm = p.fontMetrics()
         slot_h = rect.height() / float(n)
         bar_h = min(slot_h * 0.7, 46)
         cx = rect.left() + rect.width() / 2.0
@@ -843,12 +935,19 @@ class WaterfallPainter(_ChartPainter):
             top, h = min(y0, y1), abs(y1 - y0)
             sel = cat == self._selected
             color = self._muted if sel else (up if delta >= 0 else down)
-            p.fillRect(QRectF(slot_left + (slot_w - bar_w) / 2, top, bar_w, max(h, 1)),
-                       color)
-            cat_txt = fm.elidedText(str(cat), Qt.TextElideMode.ElideRight, int(slot_w))
+            p.fillRect(QRectF(slot_left + (slot_w - bar_w) /
+                       2, top, bar_w, max(h, 1)), color)
+            cat_txt = fm.elidedText(
+                str(cat), Qt.TextElideMode.ElideRight, int(slot_w))
             p.setPen(self._muted)
-            p.drawText(QRectF(slot_left, plot_bottom + 2, slot_w, label_h),
-                       Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop, cat_txt)
+            p.drawText(
+                QRectF(
+                    slot_left,
+                    plot_bottom + 2,
+                    slot_w,
+                    label_h),
+                Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop,
+                cat_txt)
         p.end()
 
     def mousePressEvent(self, e):
@@ -893,8 +992,9 @@ class TreemapPainter(_ChartPainter):
                 p.setPen(self._on_color_text(color))
                 txt = fm.elidedText("{} ({})".format(cat, fmt_num(v)),
                                     Qt.TextElideMode.ElideRight, int(rw - 6))
-                p.drawText(r.adjusted(4, 3, -4, -3),
-                           Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop, txt)
+                p.drawText(
+                    r.adjusted(
+                        4, 3, -4, -3), Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop, txt)
         p.end()
 
     def _on_color_text(self, color):
@@ -932,8 +1032,16 @@ class _SeriesPainter(_ChartPainter):
             p.setPen(self._text)
             txt = fm.elidedText(str(name), Qt.TextElideMode.ElideRight,
                                 int(area.width() - 18))
-            p.drawText(QRectF(area.left() + 18, y, area.width() - 18, row_h),
-                       Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, txt)
+            p.drawText(
+                QRectF(
+                    area.left() +
+                    18,
+                    y,
+                    area.width() -
+                    18,
+                    row_h),
+                Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+                txt)
             y += row_h
 
     def _payload(self):
@@ -972,7 +1080,9 @@ class GroupedBarPainter(_SeriesPainter):
             return self._no_data(p, rect)
 
         plot, legend_w = self._plot_rect(rect)
-        max_v = max((max(row) if row else 0 for row in matrix), default=0) or 1.0
+        max_v = max(
+            (max(row) if row else 0 for row in matrix),
+            default=0) or 1.0
         fm = p.fontMetrics()
         label_h = fm.height() + 4
         plot_bottom = plot.bottom() - label_h
@@ -995,10 +1105,20 @@ class GroupedBarPainter(_SeriesPainter):
                     color = QColor(color)
                     color.setAlpha(150)
                 p.fillRect(QRectF(x, plot_bottom - h, bar_w * 0.9, h), color)
-            cat_txt = fm.elidedText(str(cat), Qt.TextElideMode.ElideRight, int(slot_w))
+            cat_txt = fm.elidedText(
+                str(cat), Qt.TextElideMode.ElideRight, int(slot_w))
             p.setPen(self._muted)
-            p.drawText(QRectF(plot.left() + i * slot_w, plot_bottom + 2, slot_w, label_h),
-                       Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop, cat_txt)
+            p.drawText(
+                QRectF(
+                    plot.left() +
+                    i *
+                    slot_w,
+                    plot_bottom +
+                    2,
+                    slot_w,
+                    label_h),
+                Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop,
+                cat_txt)
         if legend_w:
             self._paint_legend(p, QRectF(rect.right() - legend_w, rect.top(),
                                          legend_w, rect.height()), series)
@@ -1046,10 +1166,17 @@ class StackedBarPainter(_SeriesPainter):
                     color.setAlpha(150)
                 p.fillRect(QRectF(x, y - h, bar_w, h), color)
                 y -= h
-            cat_txt = fm.elidedText(str(cat), Qt.TextElideMode.ElideRight, int(slot_w))
+            cat_txt = fm.elidedText(
+                str(cat), Qt.TextElideMode.ElideRight, int(slot_w))
             p.setPen(self._muted)
-            p.drawText(QRectF(slot_left, plot_bottom + 2, slot_w, label_h),
-                       Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop, cat_txt)
+            p.drawText(
+                QRectF(
+                    slot_left,
+                    plot_bottom + 2,
+                    slot_w,
+                    label_h),
+                Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop,
+                cat_txt)
         if legend_w:
             self._paint_legend(p, QRectF(rect.right() - legend_w, rect.top(),
                                          legend_w, rect.height()), series)
@@ -1071,8 +1198,14 @@ class _AxesPainter(_ChartPainter):
     def _axes(self, p, rect):
         plot = rect.adjusted(34, 6, -6, -24)
         p.setPen(QPen(self._grid, 1))
-        p.drawLine(QPointF(plot.left(), plot.top()), QPointF(plot.left(), plot.bottom()))
-        p.drawLine(QPointF(plot.left(), plot.bottom()), QPointF(plot.right(), plot.bottom()))
+        p.drawLine(
+            QPointF(
+                plot.left(), plot.top()), QPointF(
+                plot.left(), plot.bottom()))
+        p.drawLine(
+            QPointF(
+                plot.left(), plot.bottom()), QPointF(
+                plot.right(), plot.bottom()))
         return plot
 
 
@@ -1117,8 +1250,14 @@ class ScatterPainter(_AxesPainter):
         p.setPen(self._muted)
         p.drawText(QRectF(plot.left(), plot.bottom() + 4, 60, fm.height()),
                    Qt.AlignmentFlag.AlignLeft, fmt_num(xlo))
-        p.drawText(QRectF(plot.right() - 60, plot.bottom() + 4, 60, fm.height()),
-                   Qt.AlignmentFlag.AlignRight, fmt_num(xhi))
+        p.drawText(
+            QRectF(
+                plot.right() - 60,
+                plot.bottom() + 4,
+                60,
+                fm.height()),
+            Qt.AlignmentFlag.AlignRight,
+            fmt_num(xhi))
         p.drawText(QRectF(0, plot.top() - 2, 30, fm.height()),
                    Qt.AlignmentFlag.AlignRight, fmt_num(yhi))
         p.drawText(QRectF(0, plot.bottom() - fm.height(), 30, fm.height()),
@@ -1175,9 +1314,17 @@ class HistogramPainter(_ChartPainter):
             p.drawRect(QRectF(x, plot_bottom - h, bar_w, h))
             if bar_w > 26:
                 p.setPen(self._muted)
-                edge = fm.elidedText(str(label), Qt.TextElideMode.ElideRight, int(bar_w))
-                p.drawText(QRectF(x, plot_bottom + 2, bar_w, label_h),
-                           Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop, edge)
+                edge = fm.elidedText(
+                    str(label), Qt.TextElideMode.ElideRight, int(bar_w))
+                p.drawText(
+                    QRectF(
+                        x,
+                        plot_bottom +
+                        2,
+                        bar_w,
+                        label_h),
+                    Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop,
+                    edge)
         p.end()
 
     def mousePressEvent(self, e):
@@ -1235,10 +1382,20 @@ class CandlestickPainter(_ChartPainter):
             p.setBrush(color)
             p.setPen(QColor("#ffffff"))
             p.drawRect(QRectF(cx - body_w / 2, top, body_w, bh))
-            cat_txt = fm.elidedText(str(cat), Qt.TextElideMode.ElideRight, int(slot_w))
+            cat_txt = fm.elidedText(
+                str(cat), Qt.TextElideMode.ElideRight, int(slot_w))
             p.setPen(self._muted)
-            p.drawText(QRectF(rect.left() + i * slot_w, plot_bottom + 2, slot_w, label_h),
-                       Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop, cat_txt)
+            p.drawText(
+                QRectF(
+                    rect.left() +
+                    i *
+                    slot_w,
+                    plot_bottom +
+                    2,
+                    slot_w,
+                    label_h),
+                Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop,
+                cat_txt)
         p.end()
 
     def mousePressEvent(self, e):

@@ -22,7 +22,7 @@ the QGIS/Qt application (including fonts QGIS itself has registered).
 
 from qgis.PyQt.QtWidgets import (
     QDialog, QFormLayout, QVBoxLayout, QHBoxLayout, QWidget, QPushButton,
-    QSpinBox, QFontComboBox, QLabel, QColorDialog, QDialogButtonBox,
+    QSpinBox, QFontComboBox, QColorDialog, QDialogButtonBox,
     QScrollArea, QToolButton, QCheckBox, QComboBox,
 )
 from qgis.PyQt.QtGui import QColor, QFont, QPixmap, QPainter, QIcon
@@ -108,7 +108,11 @@ class _ColorButton(QPushButton):
         # the button carries a ``background:<color>`` stylesheet that would
         # otherwise cascade into the dialog and tint its whole chrome. The
         # window's stylesheet gives the picker the normal light look.
-        c = QColorDialog.getColor(QColor(self._color), self.window(), "Pick color")
+        c = QColorDialog.getColor(
+            QColor(
+                self._color),
+            self.window(),
+            "Pick color")
         if c.isValid():
             self._color = c.name()
             self._refresh()
@@ -214,7 +218,9 @@ class AppearanceForm(QWidget):
             self._preset.setIconSize(QSize(90, 22))
             self._preset.addItem(presets.CUSTOM)
             for name in presets.names():
-                self._preset.addItem(_swatch_icon(presets.values_for(name)), name)
+                self._preset.addItem(
+                    _swatch_icon(
+                        presets.values_for(name)), name)
             match = presets.match(theme)
             self._preset.setCurrentText(match or presets.CUSTOM)
             self._preset.currentIndexChanged.connect(self._on_preset_chosen)
@@ -225,7 +231,8 @@ class AppearanceForm(QWidget):
 
         # When embedded in the Settings panel (scrollable=False) the rows are
         # added directly so the panel's own outer scroll handles overflow — no
-        # nested scroll areas. Standalone (the per-tile inspector) keeps its own.
+        # nested scroll areas. Standalone (the per-tile inspector) keeps its
+        # own.
         inner = QWidget()
         form = QFormLayout(inner)
         compact_form(form)
@@ -294,7 +301,8 @@ class AppearanceForm(QWidget):
             self._value_size = self._spin(theme.value_size, 10, 96)
             form.addRow("Indicator value size", self._value_size)
             # transparency + border thickness (global defaults live on Layout;
-            # these let one tile override them — border color is the row above).
+            # these let one tile override them — border color is the row
+            # above).
             self._opacity = self._spin(theme.tile_opacity, 0, 100)
             form.addRow("Tile opacity (%)", self._opacity)
             self._border_width = self._spin(theme.border_width, 0, 8)
@@ -326,7 +334,8 @@ class AppearanceForm(QWidget):
         family = old.currentFont().family()
         new = QFontComboBox()
         shrink_combo(new)
-        new.setCurrentFont(QFont(family))   # set before connecting: no _on_edit
+        # set before connecting: no _on_edit
+        new.setCurrentFont(QFont(family))
         new.currentFontChanged.connect(self._on_edit)
         self._rows_form.replaceWidget(old, new)
         old.deleteLater()

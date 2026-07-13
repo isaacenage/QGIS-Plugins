@@ -45,8 +45,10 @@ class PivotElement(DashboardElement):
     def __init__(self, bus, config=None, parent=None):
         super().__init__(bus, config, parent)
         self.table = QTableWidget()
-        self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
-        self.table.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)
+        self.table.setEditTriggers(
+            QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.table.setSelectionMode(
+            QAbstractItemView.SelectionMode.NoSelection)
         self.table.setAlternatingRowColors(True)
         self.table.verticalHeader().setVisible(False)
         self.table.cellClicked.connect(self._on_cell)
@@ -112,7 +114,10 @@ class PivotElement(DashboardElement):
                               self._cell_item(_fmt(result.row_totals.get(rk)),
                                               bold=True))
             else:
-                t.setItem(r, 1, self._cell_item(_fmt(result.row_totals.get(rk))))
+                t.setItem(
+                    r, 1, self._cell_item(
+                        _fmt(
+                            result.row_totals.get(rk))))
 
         if show_totals:
             tr = len(result.row_keys)
@@ -123,8 +128,8 @@ class PivotElement(DashboardElement):
                               self._cell_item(_fmt(result.col_totals.get(ck)),
                                               bold=True))
                 if totals_col:
-                    t.setItem(tr, len(result.col_keys) + 1,
-                              self._cell_item(_fmt(result.grand_total), bold=True))
+                    t.setItem(tr, len(result.col_keys) +
+                              1, self._cell_item(_fmt(result.grand_total), bold=True))
             else:
                 t.setItem(tr, 1,
                           self._cell_item(_fmt(result.grand_total), bold=True))
@@ -143,9 +148,11 @@ class PivotElement(DashboardElement):
                     "total_color", self.effective_theme().text)))
             item.setFont(f)
         if header:
-            item.setTextAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+            item.setTextAlignment(
+                Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         else:
-            item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+            item.setTextAlignment(
+                Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         return item
 
     # ---- interactivity (source) ----

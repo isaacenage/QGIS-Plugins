@@ -6,8 +6,8 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from connection_actions import (
-    ACTIONS, LOCATION_ACTIONS, DEFAULT_ACTIONS, MAP_DEFAULT_ACTIONS,
+from connection_actions import (  # noqa: E402
+    DEFAULT_ACTIONS, MAP_DEFAULT_ACTIONS,
     has_filter, location_part, serialize, deserialize, edge_action_set,
     upgrade_legacy_map_edges,
 )
@@ -19,7 +19,8 @@ class PredicateTest(unittest.TestCase):
         self.assertFalse(has_filter({"zoom", "flash"}))
 
     def test_location_part(self):
-        self.assertEqual(location_part({"filter", "zoom", "flash"}), {"zoom", "flash"})
+        self.assertEqual(location_part(
+            {"filter", "zoom", "flash"}), {"zoom", "flash"})
         self.assertEqual(location_part({"filter"}), set())
 
 
@@ -66,10 +67,22 @@ class EdgeActionSetTest(unittest.TestCase):
         self.assertEqual(edge_action_set(actions, "s", "m", True), {"flash"})
 
     def test_map_default_when_absent(self):
-        self.assertEqual(edge_action_set({}, "s", "m", True), set(MAP_DEFAULT_ACTIONS))
+        self.assertEqual(
+            edge_action_set(
+                {},
+                "s",
+                "m",
+                True),
+            set(MAP_DEFAULT_ACTIONS))
 
     def test_nonmap_default_when_absent(self):
-        self.assertEqual(edge_action_set({}, "s", "t", False), set(DEFAULT_ACTIONS))
+        self.assertEqual(
+            edge_action_set(
+                {},
+                "s",
+                "t",
+                False),
+            set(DEFAULT_ACTIONS))
 
 
 class UpgradeLegacyTest(unittest.TestCase):
@@ -78,7 +91,8 @@ class UpgradeLegacyTest(unittest.TestCase):
         actions = {}                       # legacy: nothing explicit
         out = upgrade_legacy_map_edges(actions, adj, {"m"})
         self.assertEqual(out[("s", "m")], set(MAP_DEFAULT_ACTIONS))
-        self.assertNotIn(("s", "t"), out)  # non-map edge left implicit (filter)
+        # non-map edge left implicit (filter)
+        self.assertNotIn(("s", "t"), out)
 
     def test_explicit_map_edge_untouched(self):
         adj = {"s": {"m"}}

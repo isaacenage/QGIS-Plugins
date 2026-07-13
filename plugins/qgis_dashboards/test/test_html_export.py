@@ -34,8 +34,10 @@ class CleanConfigStyleHoistTest(unittest.TestCase):
         self.assertEqual(cfg["align"], "center")
 
     def test_same_name_keys_hoisted(self):
-        cfg = clean_config({"style": {"icon_size": 32, "animation": "fade",
-                                      "max_categories": 5, "logo_slot": "right"}})
+        cfg = clean_config({"style": {"icon_size": 32,
+                                      "animation": "fade",
+                                      "max_categories": 5,
+                                      "logo_slot": "right"}})
         self.assertEqual(cfg["icon_size"], 32)
         self.assertEqual(cfg["animation"], "fade")
         self.assertEqual(cfg["max_categories"], 5)
@@ -50,17 +52,23 @@ class CleanConfigStyleHoistTest(unittest.TestCase):
     def test_explicit_top_level_wins(self):
         cfg = clean_config({"max_rows": 99, "style": {"rows_shown": 25}})
         self.assertEqual(cfg["max_rows"], 99)
-from export.theme_css import (
+
+
+from export.theme_css import (  # noqa: E402
     theme_to_css_vars, referenced_families, font_face_css,
 )
-from export.html_builder import build_html, embed_json
-from export.basemap import xyz_template_to_leaflet, OSM_BASEMAP
-from export.size_estimate import estimate_layer_bytes
+from export.html_builder import build_html, embed_json  # noqa: E402
+from export.basemap import xyz_template_to_leaflet, OSM_BASEMAP  # noqa: E402
+from export.size_estimate import estimate_layer_bytes  # noqa: E402
 
 
 class CleanConfigTest(unittest.TestCase):
     def test_drops_id_keeps_rest(self):
-        cfg = {"id": "abc", "title": "Pop", "layer_id": "L1", "chart_type": "bar"}
+        cfg = {
+            "id": "abc",
+            "title": "Pop",
+            "layer_id": "L1",
+            "chart_type": "bar"}
         out = clean_config(cfg)
         self.assertNotIn("id", out)
         self.assertEqual(out["title"], "Pop")
@@ -138,8 +146,12 @@ class BuildModelTest(unittest.TestCase):
                            "config": {}}]}
 
     def test_top_level_shape(self):
-        model = build_model((12, 8), {"accent": "#123456"}, "p1",
-                            [self._page()], {"L1": {"fields": [], "features": []}})
+        model = build_model(
+            (12, 8), {
+                "accent": "#123456"}, "p1", [
+                self._page()], {
+                "L1": {
+                    "fields": [], "features": []}})
         self.assertEqual(model["version"], EXPORT_VERSION)
         self.assertEqual(model["grid"], {"cols": 12, "rows": 8})
         self.assertEqual(model["theme"], {"accent": "#123456"})
@@ -186,13 +198,15 @@ class ThemeCssTest(unittest.TestCase):
 
     def test_heading_family_defaults_to_body(self):
         css = theme_to_css_vars({"font_family": "Poppins"})
-        # No separate heading font -> heading stack collapses to the body stack.
+        # No separate heading font -> heading stack collapses to the body
+        # stack.
         self.assertIn('--heading-family: "Poppins",', css)
 
     def test_heading_family_pairing_leads_with_heading(self):
         css = theme_to_css_vars(
             {"font_family": "Open Sans", "heading_font": "Playfair Display"})
-        self.assertIn('--heading-family: "Playfair Display", "Open Sans",', css)
+        self.assertIn(
+            '--heading-family: "Playfair Display", "Open Sans",', css)
 
 
 class HtmlBuilderTest(unittest.TestCase):
@@ -233,7 +247,9 @@ class HtmlBuilderTest(unittest.TestCase):
         self.assertIn("/*LEAFLET_CSS*/", html)
         self.assertIn("/*LEAFLET_JS*/", html)
         # leaflet CSS before runtime CSS; leaflet JS before runtime JS
-        self.assertLess(html.index("/*LEAFLET_CSS*/"), html.index("/*RT_CSS*/"))
+        self.assertLess(
+            html.index("/*LEAFLET_CSS*/"),
+            html.index("/*RT_CSS*/"))
         self.assertLess(html.index("/*LEAFLET_JS*/"), html.index("/*RT_JS*/"))
 
 
@@ -303,7 +319,9 @@ class SizeEstimateTest(unittest.TestCase):
 
     def test_field_count_floored_at_one(self):
         # 0 fields must not zero out the attribute estimate
-        self.assertGreater(estimate_layer_bytes(10, 0, include_geometry=False), 0)
+        self.assertGreater(
+            estimate_layer_bytes(
+                10, 0, include_geometry=False), 0)
 
 
 class ReferencedFamiliesTest(unittest.TestCase):

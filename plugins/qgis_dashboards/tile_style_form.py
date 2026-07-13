@@ -47,7 +47,8 @@ class _CollapsibleSection(QWidget):
         self._btn.setCheckable(True)
         self._btn.setChecked(True)
         self._btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        self._btn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        self._btn.setToolButtonStyle(
+            Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         self._btn.setArrowType(Qt.ArrowType.DownArrow)
         self._btn.toggled.connect(self._toggle)
         v.addWidget(self._btn)
@@ -164,7 +165,8 @@ class TileStyleForm(QWidget):
             return w, (lambda: w.currentFont().family())
         if kind == ss.SIZE:
             w = QSpinBox()
-            w.setRange(int(field.opts.get("lo", 0)), int(field.opts.get("hi", 9999)))
+            w.setRange(int(field.opts.get("lo", 0)),
+                       int(field.opts.get("hi", 9999)))
             w.setSingleStep(int(field.opts.get("step", 1)))
             try:
                 w.setValue(int(seed))

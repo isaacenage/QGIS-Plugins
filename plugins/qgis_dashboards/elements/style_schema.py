@@ -77,7 +77,12 @@ def _tile_section(background=True, border_label="Tile border"):
     if background:
         fields.append(StyleField("surface_bg", "Tile background", COLOR,
                                  theme_key="surface_bg"))
-    fields.append(StyleField("border", border_label, COLOR, theme_key="border"))
+    fields.append(
+        StyleField(
+            "border",
+            border_label,
+            COLOR,
+            theme_key="border"))
     return StyleSection("Tile", fields)
 
 
@@ -110,7 +115,11 @@ def _table_fields(rows_default, *, selection=True):
     fields = [
         StyleField("header_bg", "Header background", COLOR, theme_key="zebra"),
         StyleField("header_color", "Header text", COLOR, theme_key="text"),
-        StyleField("header_font", "Header font", FONT, theme_key="font_family"),
+        StyleField(
+            "header_font",
+            "Header font",
+            FONT,
+            theme_key="font_family"),
         StyleField("header_px", "Header size (px)", SIZE,
                    theme_key="font_size", lo=6, hi=48),
         StyleField("header_weight", "Header weight", WEIGHT, default=600),
@@ -180,7 +189,11 @@ def _chart_schema():
             StyleField("series", "Series colors", PALETTE, theme_key="series"),
             StyleField("axis_color", "Axis & label color", COLOR,
                        theme_key="text_muted"),
-            StyleField("axis_font", "Label font", FONT, theme_key="font_family"),
+            StyleField(
+                "axis_font",
+                "Label font",
+                FONT,
+                theme_key="font_family"),
             StyleField("axis_px", "Label size (px)", SIZE,
                        theme_key="font_size", lo=6, hi=48),
             StyleField("show_value_labels", "Show value labels", BOOL,
@@ -219,7 +232,11 @@ def _map_schema():
     return [
         _tile_section(background=False, border_label="Border & popup outline"),
         StyleSection("Map", [
-            StyleField("map_bg", "Map background", COLOR, theme_key="surface_bg"),
+            StyleField(
+                "map_bg",
+                "Map background",
+                COLOR,
+                theme_key="surface_bg"),
         ]),
         StyleSection("Identify popup", [
             StyleField("surface_bg", "Popup background", COLOR,
@@ -278,7 +295,13 @@ def _header_schema():
         StyleSection("Title", [
             StyleField("title_color", "Color", COLOR, theme_key="text"),
             StyleField("title_font", "Font", FONT, theme_key="font_family"),
-            StyleField("title_px", "Size (px)", SIZE, default=22, lo=8, hi=200),
+            StyleField(
+                "title_px",
+                "Size (px)",
+                SIZE,
+                default=22,
+                lo=8,
+                hi=200),
             StyleField("title_weight", "Weight", WEIGHT, default=700),
             StyleField("title_italic", "Italic", ITALIC, default=False),
             StyleField("title_align", "Alignment", ALIGN, default="left"),

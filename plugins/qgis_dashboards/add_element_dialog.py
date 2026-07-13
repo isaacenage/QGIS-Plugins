@@ -14,9 +14,21 @@ tests; it re-exposes the form's public attributes (``type_combo``,
 """
 
 from qgis.PyQt.QtWidgets import (
-    QDialog, QFormLayout, QComboBox, QLineEdit, QDialogButtonBox, QCheckBox,
-    QPlainTextEdit, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QFileDialog,
-    QSpinBox, QFontComboBox, QScrollArea,
+    QDialog,
+    QFormLayout,
+    QComboBox,
+    QLineEdit,
+    QDialogButtonBox,
+    QCheckBox,
+    QPlainTextEdit,
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QPushButton,
+    QFileDialog,
+    QSpinBox,
+    QFontComboBox,
+    QScrollArea,
 )
 from qgis.PyQt.QtCore import pyqtSignal
 from qgis.PyQt.QtGui import QFont
@@ -264,7 +276,8 @@ class ElementConfigForm(QWidget):
             # Tile Appearance panel now.
             self._add_dyn("text", "Text", QPlainTextEdit())
         elif t == "image":
-            # the image *file* is data; scaling/alignment live in Tile Appearance.
+            # the image *file* is data; scaling/alignment live in Tile
+            # Appearance.
             self._add_dyn("path", "Image file", _PathPicker())
         elif t == "header":
             # the top-level "Title" row is the banner text (data); the banner's
@@ -275,7 +288,13 @@ class ElementConfigForm(QWidget):
             self._add_dyn("logo_path", "Logo image (opt)", logo_picker)
             # gap between the logo and the title text (px); shown once a logo is
             # set, mirroring the indicator's icon spacing.
-            self._add_dyn("logo_gap", "Logo spacing (px)", self._spin(0, 200, 12))
+            self._add_dyn(
+                "logo_gap",
+                "Logo spacing (px)",
+                self._spin(
+                    0,
+                    200,
+                    12))
             logo_picker.changed.connect(
                 lambda: self._set_row_visible(self._dyn.get("logo_gap"),
                                               bool(logo_picker.path())))
@@ -290,13 +309,22 @@ class ElementConfigForm(QWidget):
             self._add_dyn("prefix", "Value prefix", QLineEdit(""))
             self._add_dyn("suffix", "Value suffix", QLineEdit(""))
             self._add_dyn("decimals", "Decimal places", self._spin(0, 6, 0))
-            self._add_dyn("no_value_text", "No-data text", QLineEdit("No data"))
+            self._add_dyn(
+                "no_value_text",
+                "No-data text",
+                QLineEdit("No data"))
             icon_picker = _PathPicker(multiline=True)
             icon_picker.set_placeholder("File path, or paste <svg …> code")
             self._add_dyn("icon_path", "Icon image (opt)", icon_picker)
             # gap between the icon and the value (px); only relevant once an
             # icon is set, so the row appears when a path/SVG is present.
-            self._add_dyn("icon_gap", "Icon spacing (px)", self._spin(0, 200, 10))
+            self._add_dyn(
+                "icon_gap",
+                "Icon spacing (px)",
+                self._spin(
+                    0,
+                    200,
+                    10))
             icon_picker.changed.connect(
                 lambda: self._set_row_visible(self._dyn.get("icon_gap"),
                                               bool(icon_picker.path())))
@@ -316,7 +344,10 @@ class ElementConfigForm(QWidget):
                 mode.addItem(label, key)
             i = mode.findData("extent")
             mode.setCurrentIndex(i if i >= 0 else 0)
-            self._add_dyn("source_filter_mode", "Filter connected tiles by", mode)
+            self._add_dyn(
+                "source_filter_mode",
+                "Filter connected tiles by",
+                mode)
         elif t == "chart":
             combo = QComboBox()
             for key in CHART_TYPE_ORDER:
@@ -341,13 +372,20 @@ class ElementConfigForm(QWidget):
             chk.setChecked(True)
             self._add_dyn("show_totals", "Show totals", chk)
         elif t == "category_selector":
-            self._add_dyn("category_field", "Category field", self._field_combo())
+            self._add_dyn(
+                "category_field",
+                "Category field",
+                self._field_combo())
         elif t == "filter":
             # multi-field definition query: one dropdown per chosen column
             self._add_dyn("fields", "Filter fields", self._field_list())
-        # legend takes no rows — it mirrors every layer on the map automatically
+        # legend takes no rows — it mirrors every layer on the map
+        # automatically
         elif t == "list":
-            self._add_dyn("display_fields", "Columns to show", self._field_list())
+            self._add_dyn(
+                "display_fields",
+                "Columns to show",
+                self._field_list())
             self._add_dyn("sort_field", "Sort by (optional)",
                           self._field_combo(allow_empty=True))
             direction = QComboBox()
@@ -396,7 +434,11 @@ class ElementConfigForm(QWidget):
             stat.addItem(self._STAT_LABELS[key], key)
         stat.addItem("Custom expression…", "custom")
         self._add_dyn(stat_key, label + " statistic", stat)
-        self._add_dyn(field_key, label + " field", self._field_combo(numeric=True))
+        self._add_dyn(
+            field_key,
+            label + " field",
+            self._field_combo(
+                numeric=True))
         self._add_dyn(expr_key, label + " expression (custom)", QLineEdit(""))
         stat.currentIndexChanged.connect(
             lambda *_: self._sync_agg_rows(stat_key, field_key, expr_key))
@@ -424,10 +466,16 @@ class ElementConfigForm(QWidget):
         """Add the field rows a chart type's data shape needs."""
         shape = shape_of(chart_type)
         if shape == "category":
-            self._add_dyn("category_field", "Category field", self._field_combo())
+            self._add_dyn(
+                "category_field",
+                "Category field",
+                self._field_combo())
             self._add_chart_stat_value()
         elif shape == "series":
-            self._add_dyn("category_field", "Category field", self._field_combo())
+            self._add_dyn(
+                "category_field",
+                "Category field",
+                self._field_combo())
             self._add_dyn("series_field", "Series field", self._field_combo())
             self._add_chart_stat_value()
         elif shape == "xy":
@@ -447,7 +495,10 @@ class ElementConfigForm(QWidget):
                           self._field_combo(numeric=True))
             self._add_dyn("bin_count", "Number of bins", self._spin(2, 50, 10))
         elif shape == "ohlc":
-            self._add_dyn("category_field", "Category (x) field", self._field_combo())
+            self._add_dyn(
+                "category_field",
+                "Category (x) field",
+                self._field_combo())
             self._add_dyn("open_field", "Open field", self._field_combo())
             self._add_dyn("high_field", "High field", self._field_combo())
             self._add_dyn("low_field", "Low field", self._field_combo())
@@ -495,7 +546,11 @@ class ElementConfigForm(QWidget):
             elif isinstance(w, QPlainTextEdit):
                 w.setPlainText(val if isinstance(val, str) else "")
             elif isinstance(w, QLineEdit):
-                if key in ("display_fields", "fields") and isinstance(val, list):
+                if key in (
+                        "display_fields",
+                        "fields") and isinstance(
+                        val,
+                        list):
                     w.setText(", ".join(val))
                 else:
                     w.setText("" if val is None else str(val))
@@ -625,8 +680,8 @@ class AddElementDialog(QDialog):
         self._form = ElementConfigForm(parent=self, element=element)
         root.addWidget(self._form, 1)
 
-        self.buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok
-                                        | QDialogButtonBox.StandardButton.Cancel)
+        self.buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
         self.buttons.accepted.connect(self.accept)
         self.buttons.rejected.connect(self.reject)
         root.addWidget(self.buttons)

@@ -15,7 +15,7 @@ import unittest
 _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(os.path.dirname(_HERE), "elements"))
 
-import chart_data
+import chart_data  # noqa: E402
 
 
 class TestAggregateSeries(unittest.TestCase):
@@ -29,7 +29,8 @@ class TestAggregateSeries(unittest.TestCase):
         ]
 
     def test_sum_matrix(self):
-        out = chart_data.aggregate_series(self.rows, "region", "year", "sales", "sum")
+        out = chart_data.aggregate_series(
+            self.rows, "region", "year", "sales", "sum")
         self.assertEqual(set(out["categories"]), {"N", "S"})
         self.assertEqual(set(out["series"]), {"2020", "2021"})
         # N total (10+20+3=33) > S total (12) -> N ordered first
@@ -39,18 +40,21 @@ class TestAggregateSeries(unittest.TestCase):
         self.assertEqual(out["matrix"][n_i][y2020], 13)   # 10 + 3
 
     def test_count_stat(self):
-        out = chart_data.aggregate_series(self.rows, "region", "year", None, "count")
+        out = chart_data.aggregate_series(
+            self.rows, "region", "year", None, "count")
         n_i = out["categories"].index("N")
         y2020 = out["series"].index("2020")
         self.assertEqual(out["matrix"][n_i][y2020], 2)
 
     def test_missing_fields_empty(self):
-        out = chart_data.aggregate_series(self.rows, None, "year", "sales", "sum")
+        out = chart_data.aggregate_series(
+            self.rows, None, "year", "sales", "sum")
         self.assertEqual(out, {"categories": [], "series": [], "matrix": []})
 
     def test_category_cap(self):
         rows = [{"c": str(i), "s": "x", "v": i} for i in range(20)]
-        out = chart_data.aggregate_series(rows, "c", "s", "v", "sum", cat_cap=5)
+        out = chart_data.aggregate_series(
+            rows, "c", "s", "v", "sum", cat_cap=5)
         self.assertEqual(len(out["categories"]), 5)
 
 
@@ -105,7 +109,9 @@ class TestOhlc(unittest.TestCase):
 
     def test_skips_non_numeric(self):
         rows = [{"d": "Mon", "o": "x", "h": 1, "l": 0, "c": 1}]
-        self.assertEqual(chart_data.aggregate_ohlc(rows, "d", "o", "h", "l", "c"), [])
+        self.assertEqual(
+            chart_data.aggregate_ohlc(
+                rows, "d", "o", "h", "l", "c"), [])
 
 
 class TestSquarify(unittest.TestCase):

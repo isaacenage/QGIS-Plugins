@@ -46,7 +46,8 @@ class DashboardBus(QObject):
         self.iface = iface
         self._theme = theme or Theme.default()
         self._active_page = "default"
-        self._page_filters = {"default": {}}      # page_id -> {source_id: expr}
+        # page_id -> {source_id: expr}
+        self._page_filters = {"default": {}}
         self._page_connections = {"default": {}}  # page_id -> {source_id: set}
         # page_id -> {(source_id, target_id): set(action)} — per-edge actions,
         # parallel to _page_connections so the boolean graph (and its perf work)
@@ -163,7 +164,9 @@ class DashboardBus(QObject):
         acts = set()
         for source_id, expr in self._source_filters.items():
             if expr and target_id in self._connections.get(source_id, set()):
-                acts |= ca.location_part(self.edge_actions(source_id, target_id))
+                acts |= ca.location_part(
+                    self.edge_actions(
+                        source_id, target_id))
         return acts
 
     def active_filter_count(self):
@@ -204,7 +207,8 @@ class DashboardBus(QObject):
 
         A no-op (the edge already matches *connected*) emits no signals.
         """
-        if source_id == target_id or self.is_connected(source_id, target_id) == bool(connected):
+        if source_id == target_id or self.is_connected(
+                source_id, target_id) == bool(connected):
             return
         targets = self.targets_of(source_id)
         if connected:
@@ -224,7 +228,8 @@ class DashboardBus(QObject):
         # target's combined_filter_for(...), so skip the (expensive) filter
         # fan-out — every accepting tile re-queries its layer on filtersChanged.
         # This is what made ticking Connections checkboxes heavy on a dashboard
-        # with many tiles: each tick triggered N full layer scans for no change.
+        # with many tiles: each tick triggered N full layer scans for no
+        # change.
         if self._source_filters.get(source_id):
             self.filtersChanged.emit()
 

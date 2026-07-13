@@ -118,7 +118,8 @@ def _lay_indicators(rects, idxs, y, W, h):
     """Equal, adjacent KPI cells; wrap to a second row past the per-row cap."""
     k = len(idxs)
     rows = 1 if k <= _MAX_INDICATORS_PER_ROW else 2
-    counts = _equal_ints(k, rows)            # items per row, as even as possible
+    # items per row, as even as possible
+    counts = _equal_ints(k, rows)
     heights = _equal_ints(h, rows)
     ry = y
     start = 0
@@ -161,7 +162,8 @@ def _lay_main(rects, items, idxs, y, W, H):
     for g, gh in zip(groups, heights):
         # linear weight (not sqrt) so the heaviest tile — the map — claims the
         # most width; this is what makes the map the biggest tile. Differs
-        # deliberately from the sqrt(wt) used in the row-height denominator above.
+        # deliberately from the sqrt(wt) used in the row-height denominator
+        # above.
         wkeys = [a * wt for (_, a, wt) in g]
         widths = _proportional_ints(wkeys, W)  # sum to W exactly
         cx = 0

@@ -131,8 +131,10 @@ class PublishDialog(QDialog):
         box.setWindowTitle("Large data")
         box.setIcon(QMessageBox.Icon.Warning)
         box.setText("\n".join(lines))
-        proceed = box.addButton("Publish anyway", QMessageBox.ButtonRole.AcceptRole)
-        skip = box.addButton("Skip these layers", QMessageBox.ButtonRole.DestructiveRole)
+        box.addButton("Publish anyway", QMessageBox.ButtonRole.AcceptRole)
+        skip = box.addButton(
+            "Skip these layers",
+            QMessageBox.ButtonRole.DestructiveRole)
         cancel = box.addButton(QMessageBox.StandardButton.Cancel)
         box.setDefaultButton(cancel)
         box.exec()

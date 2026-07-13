@@ -95,7 +95,8 @@ class RecentStore:
         if configured and os.path.isdir(configured):
             return configured
         documents = os.path.join(os.path.expanduser("~"), "Documents")
-        return documents if os.path.isdir(documents) else os.path.expanduser("~")
+        return documents if os.path.isdir(
+            documents) else os.path.expanduser("~")
 
     def remember_dir(self, path):
         directory = os.path.dirname(os.path.abspath(str(path)))

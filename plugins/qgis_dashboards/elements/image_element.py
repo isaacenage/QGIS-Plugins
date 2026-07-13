@@ -52,7 +52,8 @@ class ImageElement(DashboardElement):
         path = (self.config.get("path") or "").strip()
         self._clear_sources()
         if not path:
-            self._show_placeholder("No image — edit this tile to choose a file")
+            self._show_placeholder(
+                "No image — edit this tile to choose a file")
             return
         if not os.path.isfile(path):
             self._show_placeholder("Image not found:\n{}".format(path))
@@ -71,7 +72,10 @@ class ImageElement(DashboardElement):
     def _restyle(self):
         th = self.effective_theme()
         align = self.style_get("img_align", "center")
-        self._label.setAlignment(_ALIGN.get(align, Qt.AlignmentFlag.AlignCenter))
+        self._label.setAlignment(
+            _ALIGN.get(
+                align,
+                Qt.AlignmentFlag.AlignCenter))
         self._label.setStyleSheet(
             "color:{}; background:transparent;".format(th.text_muted))
         self._render()

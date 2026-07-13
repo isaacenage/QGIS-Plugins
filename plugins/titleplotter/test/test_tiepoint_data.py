@@ -63,7 +63,11 @@ class TestBuildSearchParams(unittest.TestCase):
         self.assertEqual(params["limit"], "50")
 
     def test_blank_filters_are_dropped(self):
-        params = dict(build_search_params(name="  ", description="", province=" "))
+        params = dict(
+            build_search_params(
+                name="  ",
+                description="",
+                province=" "))
         self.assertNotIn("name_key", params)
         self.assertNotIn("description", params)
         self.assertNotIn("province", params)
@@ -122,7 +126,8 @@ class TestParseCoordinate(unittest.TestCase):
         self.assertEqual(parse_coordinate("   "), (None, True))
 
     def test_numeric_with_thousands_separator(self):
-        self.assertEqual(parse_coordinate("1,691,760.514"), (1691760.514, True))
+        self.assertEqual(parse_coordinate(
+            "1,691,760.514"), (1691760.514, True))
 
     def test_garbage_is_invalid(self):
         self.assertEqual(parse_coordinate("abc"), (None, False))

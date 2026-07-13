@@ -10,7 +10,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from submit_payload import (
+from submit_payload import (  # noqa: E402
     MAX_AUTHOR, MAX_DESC, MAX_HTML_BYTES, MAX_TITLE,
     build_row, candidate_slug, exceeds_size_limit, object_key, slugify,
     storage_path, view_url,
@@ -48,7 +48,11 @@ class TestCandidateSlug(unittest.TestCase):
 
 class TestPaths(unittest.TestCase):
     def test_object_key(self):
-        self.assertEqual(object_key("my-map", "index.html"), "my-map/index.html")
+        self.assertEqual(
+            object_key(
+                "my-map",
+                "index.html"),
+            "my-map/index.html")
 
     def test_storage_path_includes_bucket(self):
         self.assertEqual(

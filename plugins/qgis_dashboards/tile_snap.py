@@ -81,7 +81,8 @@ def snap_rect(rect, others, region, gap, threshold):
     top_target = _nearest_line(y, top_lines, threshold)
     bottom_target = _nearest_line(y + h, bottom_lines, threshold)
     top_d = abs(top_target - y) if top_target is not None else None
-    bottom_d = abs(bottom_target - (y + h)) if bottom_target is not None else None
+    bottom_d = abs(bottom_target - (y + h)
+                   ) if bottom_target is not None else None
     if top_d is not None and (bottom_d is None or top_d <= bottom_d):
         y = top_target
     elif bottom_d is not None:
@@ -120,7 +121,8 @@ def nearest_free(rect, others, region, step=8):
     best_d = None
     radius = step
     # rings of increasing radius around the original origin; stop once a ring
-    # has been fully exhausted with a hit (closer hits are found on inner rings)
+    # has been fully exhausted with a hit (closer hits are found on inner
+    # rings)
     max_radius = max(region_w, region_h)
     while radius <= max_radius:
         found_on_ring = False

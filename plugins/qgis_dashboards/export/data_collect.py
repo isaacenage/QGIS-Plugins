@@ -12,6 +12,7 @@ Cross-filtering is deliberately NOT applied here — only the per-tile
 """
 
 import base64
+import contextlib
 import mimetypes
 import os
 
@@ -25,11 +26,9 @@ def jsonify(value):
     # QGIS NULL is a typed null QVariant exposing isNull(); treat it as None.
     is_null = getattr(value, "isNull", None)
     if callable(is_null):
-        try:
+        with contextlib.suppress(Exception):
             if value.isNull():
                 return None
-        except Exception:
-            pass
     if isinstance(value, bool):
         return value
     if isinstance(value, (int, float, str)):
@@ -37,10 +36,8 @@ def jsonify(value):
     # QDate / QDateTime / QTime and anything exotic -> ISO-ish string.
     to_string = getattr(value, "toString", None)
     if callable(to_string):
-        try:
+        with contextlib.suppress(Exception):
             return value.toString("yyyy-MM-dd HH:mm:ss").strip() or str(value)
-        except Exception:
-            pass
     return str(value)
 
 
@@ -105,7 +102,8 @@ def image_data_uri(path):
             raw = fh.read()
     except OSError:
         return None
-    return "data:{};base64,{}".format(mime, base64.b64encode(raw).decode("ascii"))
+    return "data:{};base64,{}".format(
+        mime, base64.b64encode(raw).decode("ascii"))
 
 
 def layer_size_info(layer):

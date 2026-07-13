@@ -37,7 +37,8 @@ class HeaderElement(DashboardElement):
 
     def __init__(self, bus, config=None, parent=None):
         super().__init__(bus, config, parent)
-        # the banner is its own content — drop the base title / description chrome
+        # the banner is its own content — drop the base title / description
+        # chrome
         self.title_label.hide()
         self.desc_label.hide()
         self._has_base_title = False   # the banner's own title carries styling
@@ -95,4 +96,3 @@ class HeaderElement(DashboardElement):
         self.apply_text_role(self._title, "title", color=th.text,
                              font=th.font_family, size=22, weight=700,
                              align="left")
-

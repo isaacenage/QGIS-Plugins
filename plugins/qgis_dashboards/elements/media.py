@@ -38,7 +38,13 @@ def _svg_pixmap(renderer, size):
     if bw > 0 and bh > 0:
         scale = min(size / bw, size / bh)
         w, h = bw * scale, bh * scale
-        renderer.render(painter, QRectF((size - w) / 2.0, (size - h) / 2.0, w, h))
+        renderer.render(
+            painter,
+            QRectF(
+                (size - w) / 2.0,
+                (size - h) / 2.0,
+                w,
+                h))
     else:
         renderer.render(painter)
     painter.end()
@@ -59,7 +65,11 @@ def icon_pixmap(source, size):
     if _looks_like_svg_markup(source):
         if QSvgRenderer is None:
             return None
-        return _svg_pixmap(QSvgRenderer(QByteArray(source.encode("utf-8"))), size)
+        return _svg_pixmap(
+            QSvgRenderer(
+                QByteArray(
+                    source.encode("utf-8"))),
+            size)
     if not os.path.isfile(source):
         return None
     ext = os.path.splitext(source)[1].lower()
@@ -68,4 +78,8 @@ def icon_pixmap(source, size):
     pixmap = QPixmap(source)
     if pixmap.isNull():
         return None
-    return pixmap.scaled(size, size, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+    return pixmap.scaled(
+        size,
+        size,
+        Qt.AspectRatioMode.KeepAspectRatio,
+        Qt.TransformationMode.SmoothTransformation)

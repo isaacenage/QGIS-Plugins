@@ -20,7 +20,8 @@ MAX_BYTES = 50 * 1024 * 1024
 
 
 def _default_name():
-    name = os.path.splitext(os.path.basename(QgsProject.instance().fileName()))[0]
+    name = os.path.splitext(os.path.basename(
+        QgsProject.instance().fileName()))[0]
     return (name or "dashboard") + ".html"
 
 
@@ -52,8 +53,10 @@ def prompt_and_export(window, parent=None):
         box.setWindowTitle("Large data")
         box.setIcon(QMessageBox.Icon.Warning)
         box.setText(_format_warning(big))
-        proceed = box.addButton("Export anyway", QMessageBox.ButtonRole.AcceptRole)
-        skip = box.addButton("Skip these layers", QMessageBox.ButtonRole.DestructiveRole)
+        box.addButton("Export anyway", QMessageBox.ButtonRole.AcceptRole)
+        skip = box.addButton(
+            "Skip these layers",
+            QMessageBox.ButtonRole.DestructiveRole)
         cancel = box.addButton(QMessageBox.StandardButton.Cancel)
         box.setDefaultButton(cancel)
         box.exec()

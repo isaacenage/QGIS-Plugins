@@ -66,7 +66,13 @@ def view_url(slug):
     return "{}?d={}".format(VIEW_BASE_URL, quote(slug))
 
 
-def build_row(slug, title, author, description, html_bytes_len, has_thumb=True):
+def build_row(
+        slug,
+        title,
+        author,
+        description,
+        html_bytes_len,
+        has_thumb=True):
     """The dashboards-table insert body for one published dashboard."""
     row = {
         "slug": slug,

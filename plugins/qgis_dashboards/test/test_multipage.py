@@ -179,7 +179,8 @@ class FilterChangeDetectionTest(unittest.TestCase):
         self.assertEqual(el.refreshes, 1)
 
         bus.filtersChanged.emit()                    # spurious broadcast
-        self.assertEqual(el.refreshes, 1)            # combined unchanged → skip
+        # combined unchanged → skip
+        self.assertEqual(el.refreshes, 1)
 
         bus.set_filter("src", None)                  # cleared → changes again
         self.assertEqual(el.refreshes, 2)
@@ -189,8 +190,10 @@ class FilterChangeDetectionTest(unittest.TestCase):
         el = self._element(bus, "tgt")               # not wired to "src"
         bus.filtersChanged.emit()                    # settle the change-detector
         base = el.refreshes
-        bus.set_filter("src", '"a" = 1')             # an unrelated source filters
-        self.assertEqual(el.refreshes, base)         # combined still None → skip
+        # an unrelated source filters
+        bus.set_filter("src", '"a" = 1')
+        # combined still None → skip
+        self.assertEqual(el.refreshes, base)
 
 
 class _FakeElement(object):
@@ -231,7 +234,8 @@ class ElementConnectionsDialogTest(unittest.TestCase):
 
     def test_apply_writes_outgoing_and_incoming_edges(self):
         bus, dlg = self._setup("chart")
-        dlg._checks[("ind", "out")].setChecked(True)   # chart filters indicator
+        dlg._checks[("ind", "out")].setChecked(
+            True)   # chart filters indicator
         dlg._checks[("sel", "in")].setChecked(True)    # selector filters chart
         dlg.apply()
         self.assertTrue(bus.is_connected("chart", "ind"))
@@ -248,8 +252,11 @@ class ElementConnectionsDialogTest(unittest.TestCase):
         # rebuild so the checkbox reflects the existing edge
         from connections_dialog import ElementConnectionsDialog
         dlg = ElementConnectionsDialog(
-            bus, _FakeElement("ind", False, True),
-            [_FakeElement("sel", True, False), _FakeElement("ind", False, True)])
+            bus, _FakeElement(
+                "ind", False, True), [
+                _FakeElement(
+                    "sel", True, False), _FakeElement(
+                    "ind", False, True)])
         self.assertTrue(dlg._checks[("sel", "in")].isChecked())
         dlg._checks[("sel", "in")].setChecked(False)
         dlg.apply()
@@ -331,7 +338,8 @@ class AddElementDialogTest(unittest.TestCase):
         self._select(dlg, "indicator")
         self.assertFalse(dlg.layer_combo.isHidden())   # data tile shows layer
         self._select(dlg, "text")
-        self.assertTrue(dlg.layer_combo.isHidden())     # layerless tile hides it
+        # layerless tile hides it
+        self.assertTrue(dlg.layer_combo.isHidden())
         dlg._dyn["text"].setPlainText("Title here")
         t, cfg = dlg.result_config()
         self.assertEqual(t, "text")
@@ -585,7 +593,6 @@ class HeaderElementTest(unittest.TestCase):
         self.assertEqual(el._title.text(), "Acme Corp")
 
 
-
 class AddElementHeaderDialogTest(unittest.TestCase):
     def _select(self, dlg, type_name):
         i = dlg.type_combo.findData(type_name)
@@ -652,14 +659,19 @@ class WindowHeaderTest(unittest.TestCase):
         """Growing the banner pushes every tile below it down by the delta
         (accordion), and shrinking pulls them back up — never reverting."""
         win = self._win()
-        win.add_element("header", {"title": "Brand"})       # lands at (0,0,w,80)
-        win.add_element("text", {"title": "Body"})           # lands below the band
+        win.add_element("header", {"title": "Brand"}
+                        )       # lands at (0,0,w,80)
+        # lands below the band
+        win.add_element("text", {"title": "Body"})
         canvas = win.current_page().canvas
-        header = next(t for t in canvas.tiles() if t.element.type_name == "header")
-        below = next(t for t in canvas.tiles() if t.element.type_name == "text")
+        header = next(t for t in canvas.tiles()
+                      if t.element.type_name == "header")
+        below = next(t for t in canvas.tiles()
+                     if t.element.type_name == "text")
         hx, hy, hw, hh = header.grid_rect()
         by = below.grid_rect()[1]
-        self.assertGreaterEqual(by, hy + hh)                 # it really is below
+        # it really is below
+        self.assertGreaterEqual(by, hy + hh)
 
         # grow the banner by 100 → the tile below slides down by exactly 100
         header.set_height_px(hh + 100)
@@ -677,7 +689,8 @@ class ThemeChromeTest(unittest.TestCase):
         qss = Theme.default().window_qss()
         self.assertIn("QMainWindow", qss)
         self.assertIn("QTabBar::tab", qss)
-        # the horizontal toolbar was replaced by the left icon rail + status bar
+        # the horizontal toolbar was replaced by the left icon rail + status
+        # bar
         self.assertIn("#dashSidebar", qss)
         self.assertIn("QStatusBar", qss)
 
@@ -731,7 +744,10 @@ class EdgeActionTest(unittest.TestCase):
         bus.set_active_page("A")
         bus.load_connections({"s": ["m", "t"]}, "A")   # legacy list shape
         bus.upgrade_legacy_map_edges("A", ["m"])
-        self.assertEqual(bus.edge_actions("s", "m"), {"filter", "zoom", "flash"})
+        self.assertEqual(
+            bus.edge_actions(
+                "s", "m"), {
+                "filter", "zoom", "flash"})
         self.assertEqual(bus.edge_actions("s", "t"), {"filter"})   # non-map
 
 

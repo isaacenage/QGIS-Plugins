@@ -30,7 +30,8 @@ def compact_form(form):
     form.setFieldGrowthPolicy(
         QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
     form.setLabelAlignment(Qt.AlignmentFlag.AlignLeft)
-    form.setFormAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+    form.setFormAlignment(Qt.AlignmentFlag.AlignLeft |
+                          Qt.AlignmentFlag.AlignTop)
 
 
 def no_horizontal_scroll(scroll):

@@ -81,8 +81,9 @@ class ChartElementTest(unittest.TestCase):
 class LegacyMigrationTest(unittest.TestCase):
     def test_serial_chart_migrates_to_bar(self):
         bus = DashboardBus(IFACE)
-        el = create_element("serial_chart", bus,
-                            {"category_field": "x", "statistic": "sum"}, PARENT)
+        el = create_element(
+            "serial_chart", bus, {
+                "category_field": "x", "statistic": "sum"}, PARENT)
         self.assertEqual(el.type_name, "chart")
         self.assertEqual(el._chart_type(), "bar")
         self.assertEqual(el.to_dict()["__type__"], "chart")

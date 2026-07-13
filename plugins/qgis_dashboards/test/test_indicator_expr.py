@@ -6,7 +6,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from indicator_expr import build_aggregate, parse_aggregate, STATISTICS
+from indicator_expr import build_aggregate, parse_aggregate, STATISTICS  # noqa: E402
 
 
 class BuildAggregateTest(unittest.TestCase):
@@ -41,7 +41,8 @@ class ParseAggregateTest(unittest.TestCase):
 
     def test_field_aggregates(self):
         self.assertEqual(parse_aggregate('sum("pop")'), ("sum", "pop"))
-        self.assertEqual(parse_aggregate('  mean("area ha")  '), ("mean", "area ha"))
+        self.assertEqual(parse_aggregate(
+            '  mean("area ha")  '), ("mean", "area ha"))
 
     def test_non_aggregate_is_none(self):
         self.assertIsNone(parse_aggregate('sum("a") + 1'))
@@ -50,9 +51,16 @@ class ParseAggregateTest(unittest.TestCase):
         self.assertIsNone(parse_aggregate(None))
 
     def test_round_trip(self):
-        for stat, fld in [("sum", "pop"), ("mean", "area"), ("min", "h"), ("max", "h")]:
-            self.assertEqual(parse_aggregate(build_aggregate(stat, fld)), (stat, fld))
-        self.assertEqual(parse_aggregate(build_aggregate("count", None)), ("count", None))
+        for stat, fld in [("sum", "pop"), ("mean", "area"),
+                          ("min", "h"), ("max", "h")]:
+            self.assertEqual(
+                parse_aggregate(
+                    build_aggregate(
+                        stat, fld)), (stat, fld))
+        self.assertEqual(
+            parse_aggregate(
+                build_aggregate(
+                    "count", None)), ("count", None))
 
     def test_statistics_constant(self):
         self.assertEqual(STATISTICS[0], "count")

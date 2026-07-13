@@ -153,7 +153,12 @@ class IndicatorValue(QWidget):
             " font-style:{st}; }}".format(
                 c=color, s=self._pixel_size, w=weight,
                 st="italic" if italic else "normal"))
-        self._roll.configure(color, self._pixel_size, self._family, weight, italic)
+        self._roll.configure(
+            color,
+            self._pixel_size,
+            self._family,
+            weight,
+            italic)
 
     def set_options(self, mode, duration, formatter):
         self._mode = (mode or "").lower()

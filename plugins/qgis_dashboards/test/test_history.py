@@ -10,7 +10,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from history import History
+from history import History  # noqa: E402
 
 
 def _snap(n):

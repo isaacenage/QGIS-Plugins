@@ -58,7 +58,7 @@ from . import icons
 try:
     from . import resources  # noqa: F401
 except Exception:
-    pass
+    resources = None          # icon falls back to the filesystem path
 
 
 class TitlePlotterPhilippineLandTitles:
@@ -115,7 +115,8 @@ class TitlePlotterPhilippineLandTitles:
         :rtype: QString
         """
         # noinspection PyTypeChecker,PyArgumentList,PyCallByClass
-        return QtWidgets.QApplication.translate('TitlePlotterPhilippineLandTitles', message)
+        return QtWidgets.QApplication.translate(
+            'TitlePlotterPhilippineLandTitles', message)
 
     def add_action(
             self,
@@ -200,8 +201,15 @@ class TitlePlotterPhilippineLandTitles:
         # if QtSvg is unavailable.
         icon = icons.logo_icon()
         if icon.isNull():
-            icon = QIcon(os.path.join(os.path.dirname(__file__), "icons", "icon.png"))
-        self.action = QAction(icon, "Title Plotter – Philippine Land Titles", self.iface.mainWindow())
+            icon = QIcon(
+                os.path.join(
+                    os.path.dirname(__file__),
+                    "icons",
+                    "icon.png"))
+        self.action = QAction(
+            icon,
+            "Title Plotter – Philippine Land Titles",
+            self.iface.mainWindow())
         self.action.triggered.connect(self.run)
         self.iface.addToolBarIcon(self.action)
         self.iface.addPluginToMenu(self.menu, self.action)
@@ -214,7 +222,8 @@ class TitlePlotterPhilippineLandTitles:
 
     def setup_connections(self):
         """Set up signal connections for the dialog."""
-        self.dlg.openTiePointDialogButton.clicked.connect(self.open_tiepoint_selector)
+        self.dlg.openTiePointDialogButton.clicked.connect(
+            self.open_tiepoint_selector)
         self.dlg.plotButton.clicked.connect(self.dlg.plot_on_map)
 
     def add_bearing_row(self):
@@ -320,11 +329,13 @@ class TitlePlotterPhilippineLandTitles:
                     continue
 
                 try:
-                    bearing = self.parse_bearing(direction, degrees, minutes, quadrant)
+                    bearing = self.parse_bearing(
+                        direction, degrees, minutes, quadrant)
                     distance = float(distance)
 
                     if bearing is not None:
-                        next_point = self.calculate_point(current_point, bearing, distance)
+                        next_point = self.calculate_point(
+                            current_point, bearing, distance)
                         self.current_points.append(next_point)
 
                         # Draw line
@@ -349,7 +360,9 @@ class TitlePlotterPhilippineLandTitles:
                 self.scene.addItem(line)
 
             # Fit view to scene
-            self.dlg.polygonPreview.fitInView(self.scene.sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
+            self.dlg.polygonPreview.fitInView(
+                self.scene.sceneRect(),
+                Qt.AspectRatioMode.KeepAspectRatio)
 
         except ValueError:
             pass
@@ -359,15 +372,18 @@ class TitlePlotterPhilippineLandTitles:
         if dialog.exec():
             selected_row = dialog.get_selected_row()
             if selected_row:
-                self.dlg.tiePointNorthingInput.setText(str(selected_row['northing']))
-                self.dlg.tiePointEastingInput.setText(str(selected_row['easting']))
+                self.dlg.tiePointNorthingInput.setText(
+                    str(selected_row['northing']))
+                self.dlg.tiePointEastingInput.setText(
+                    str(selected_row['easting']))
                 self.update_preview()
 
     def run(self):
         """Run method that performs all the real work"""
 
         # Create the dialog with elements (after translation) and keep reference
-        # Only create GUI ONCE in callback, so that it will only load when the plugin is started
+        # Only create GUI ONCE in callback, so that it will only load when the
+        # plugin is started
         if self.first_start:
             self.first_start = False
             self.dlg = TitlePlotterPhilippineLandTitlesDialog(self.iface)

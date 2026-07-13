@@ -34,9 +34,12 @@ class ExtentWktTest(unittest.TestCase):
 class ExtentFilterExpressionTest(unittest.TestCase):
     def test_with_authid_transforms_geometry(self):
         expr = map_filter.extent_filter_expression(0, 0, 1, 1, "EPSG:3857")
-        self.assertIn("transform($geometry, layer_property(@layer, 'crs'), 'EPSG:3857')", expr)
+        self.assertIn(
+            "transform($geometry, layer_property(@layer, 'crs'), 'EPSG:3857')",
+            expr)
         self.assertIn("geom_from_wkt('POLYGON((", expr)
-        # null/absent geometry passes through (wiring a non-spatial table is a no-op)
+        # null/absent geometry passes through (wiring a non-spatial table is a
+        # no-op)
         self.assertTrue(expr.startswith("coalesce(intersects("))
         self.assertTrue(expr.endswith("), true)"))
 

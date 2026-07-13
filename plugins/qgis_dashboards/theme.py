@@ -53,8 +53,9 @@ DEFAULT_SERIES = [
 ]
 
 _DEFAULTS = {
-    "chrome_bg": "#ffffff",   # window / toolbar / tab-bar chrome (light by default,
-                              # independent of the QGIS application theme)
+    # window / toolbar / tab-bar chrome (light by default,
+    "chrome_bg": "#ffffff",
+    # independent of the QGIS application theme)
     "window_bg": "#fafafa",   # canvas drawing-area background (editable)
     "surface_bg": "#ffffff",  # tile background
     "text": "#252b33",        # primary foreground
@@ -68,16 +69,21 @@ _DEFAULTS = {
     "selection": "#e5e7eb",   # selected table row / text selection
     "series": list(DEFAULT_SERIES),
     "font_family": "Inter",   # default UI body font; resolved against installed QGIS/Qt
-                              # fonts (no longer bundled) and falls back gracefully
-    "heading_font": "",       # optional heading/display family (titles + indicator
-                              # value). Empty == reuse font_family (no pairing).
+                              # fonts (no longer bundled) and falls back
+                              # gracefully
+    # optional heading/display family (titles + indicator
+    "heading_font": "",
+                              # value). Empty == reuse font_family (no
+                              # pairing).
     "font_size": 11,
     "title_size": 13,
     "value_size": 30,         # indicator big number
     "radius": 12,             # tile / surface corner radius (px)
     "border_width": 1,        # tile border thickness (px)
-    "tile_opacity": 100,      # element transparency (%): tiles, charts, tables —
-                              # 100 = solid, 0 = fully see-through (canvas shows)
+    # element transparency (%): tiles, charts, tables —
+    "tile_opacity": 100,
+                              # 100 = solid, 0 = fully see-through (canvas
+                              # shows)
 }
 
 # Keys a per-element override is allowed to set (a tile can't move the window).
@@ -117,8 +123,8 @@ class Theme(object):
         return cls(**clean)
 
     def to_dict(self):
-        return {k: (list(getattr(self, k)) if k == "series" else getattr(self, k))
-                for k in _DEFAULTS}
+        return {k: (list(getattr(self, k)) if k ==
+                    "series" else getattr(self, k)) for k in _DEFAULTS}
 
     def with_values(self, **values):
         data = self.to_dict()
@@ -421,7 +427,7 @@ QToolTip {{
             zebra=CHROME["zebra"], selection=CHROME["selection"],
             brand_soft=CHROME["brand_soft"], system_font=SYSTEM_FONT_STACK,
             # --- CANVAS: the dashboard theme (tiles + canvas only) ----------
-            window_bg=self.window_bg, tile_bg=self.surface_bg,
+            window_bg=self.window_bg,
             tile_rgba=self.surface_rgba(), border_width=self.border_width,
             tile_border=self.border, radius=self.radius,
             canvas_text=self.text, canvas_muted=self.text_muted,
@@ -429,7 +435,6 @@ QToolTip {{
             heading_stack=self.heading_stack(),
             heading_font=self._heading_rule(self.title_size),
             small_font=self._font_rule(11),
-            base_font=self._font_rule(self.font_size),
         )
 
     def _accent_rgb(self):
@@ -492,7 +497,7 @@ QHeaderView::section {{
             zebra_rgba=self.zebra_rgba(), border_width=self.border_width,
             radius=self.radius, text=self.text, accent=self.accent,
             muted=self.text_muted, border=self.border,
-            selection=self.selection, zebra=self.zebra,
+            selection=self.selection,
             value_size=self.value_size, heading_stack=self.heading_stack(),
             heading_font=self._heading_rule(self.title_size),
             base_font=self._font_rule(self.font_size),

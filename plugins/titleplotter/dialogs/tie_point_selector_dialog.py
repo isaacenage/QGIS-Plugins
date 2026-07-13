@@ -14,11 +14,18 @@ from .. import tiepoint_service
 from ..tiepoint_data import DEFAULT_LIMIT, filter_rows, merge_rows, provinces_from_rows
 from .report_correction_dialog import ReportCorrectionDialog
 
-# This loads your .ui file so that PyQt can populate your plugin with the elements from Qt Designer
-FORM_CLASS, _ = uic.loadUiType(os.path.join(
-    os.path.dirname(os.path.dirname(__file__)), 'forms', 'tie_point_selector_dialog_base.ui'))
+# This loads your .ui file so that PyQt can populate your plugin with the
+# elements from Qt Designer
+FORM_CLASS, _ = uic.loadUiType(os.path.join(os.path.dirname(
+    os.path.dirname(__file__)), 'forms', 'tie_point_selector_dialog_base.ui'))
 
-TABLE_HEADERS = ["Tie Point Name", "Description", "Province", "Municipality", "Northing", "Easting"]
+TABLE_HEADERS = [
+    "Tie Point Name",
+    "Description",
+    "Province",
+    "Municipality",
+    "Northing",
+    "Easting"]
 
 
 class TiePointSelectorDialog(QDialog, FORM_CLASS):
@@ -59,7 +66,8 @@ class TiePointSelectorDialog(QDialog, FORM_CLASS):
             self.statusLabel.setText(
                 "Status: Use search to find tie points ({} available offline).".format(cached_count))
         else:
-            self.statusLabel.setText("Status: No data loaded. Use search to find tie points.")
+            self.statusLabel.setText(
+                "Status: No data loaded. Use search to find tie points.")
 
     def setup_connections(self):
         # Remove textChanged connections and add search button connection
@@ -109,8 +117,10 @@ class TiePointSelectorDialog(QDialog, FORM_CLASS):
             self.tiePointTable.horizontalHeaderItem(i).setToolTip(tooltip)
 
         # Allow single row selection
-        self.tiePointTable.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
-        self.tiePointTable.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.tiePointTable.setSelectionMode(
+            QAbstractItemView.SelectionMode.SingleSelection)
+        self.tiePointTable.setSelectionBehavior(
+            QAbstractItemView.SelectionBehavior.SelectRows)
 
     def populate_table(self, rows):
         """Populate table with a list of tie point dicts."""
@@ -127,14 +137,19 @@ class TiePointSelectorDialog(QDialog, FORM_CLASS):
             # user-triggered column sorting
             name_item.setData(Qt.ItemDataRole.UserRole, row)
             self.tiePointTable.setItem(row_idx, 0, name_item)
-            self.tiePointTable.setItem(row_idx, 1, QTableWidgetItem(str(row.get("description") or "")))
-            self.tiePointTable.setItem(row_idx, 2, QTableWidgetItem(str(row.get("province") or "")))
-            self.tiePointTable.setItem(row_idx, 3, QTableWidgetItem(str(row.get("municipality") or "")))
+            self.tiePointTable.setItem(row_idx, 1, QTableWidgetItem(
+                str(row.get("description") or "")))
+            self.tiePointTable.setItem(
+                row_idx, 2, QTableWidgetItem(str(row.get("province") or "")))
+            self.tiePointTable.setItem(row_idx, 3, QTableWidgetItem(
+                str(row.get("municipality") or "")))
             for col, key in ((4, "northing"), (5, "easting")):
                 item = QTableWidgetItem()
                 value = row.get(key)
                 # DisplayRole with the float itself sorts numerically
-                item.setData(Qt.ItemDataRole.DisplayRole, "" if value is None else value)
+                item.setData(
+                    Qt.ItemDataRole.DisplayRole,
+                    "" if value is None else value)
                 self.tiePointTable.setItem(row_idx, col, item)
 
         self.tiePointTable.setSortingEnabled(True)
@@ -153,9 +168,11 @@ class TiePointSelectorDialog(QDialog, FORM_CLASS):
         rows, error = tiepoint_service.search_tiepoints(**filters)
         if rows is not None:
             self.populate_table(rows)
-            suffix = " Refine your search to see more." if len(rows) >= DEFAULT_LIMIT else ""
+            suffix = " Refine your search to see more." if len(
+                rows) >= DEFAULT_LIMIT else ""
             self.statusLabel.setText(
-                "Status: {} tie points found (online).{}".format(len(rows), suffix))
+                "Status: {} tie points found (online).{}".format(
+                    len(rows), suffix))
             # Every successful search grows the offline cache for field work
             self._cache = {
                 "rows": merge_rows(self._cache["rows"], rows),
@@ -221,7 +238,8 @@ class TiePointSelectorDialog(QDialog, FORM_CLASS):
         """Rearrange UI elements and add placeholders programmatically."""
         # 1. Add Placeholders
         self.nameInput.setPlaceholderText("e.g., BLLM 1, BLBM 10")
-        self.municipalityInput.setPlaceholderText("e.g., Tagaytay City, Malolos City")
+        self.municipalityInput.setPlaceholderText(
+            "e.g., Tagaytay City, Malolos City")
         self.descriptionInput.setPlaceholderText("e.g., Cadastral Survey")
         self.provinceComboBox.setToolTip("Select Province")
 
@@ -250,7 +268,8 @@ class TiePointSelectorDialog(QDialog, FORM_CLASS):
 
         # Description
         grid.addWidget(self.label_2, 1, 2)  # Description Label
-        grid.addWidget(self.descriptionInput, 1, 3, 1, 2)  # Span 2 columns to align with search button edge
+        # Span 2 columns to align with search button edge
+        grid.addWidget(self.descriptionInput, 1, 3, 1, 2)
 
         # Remove the old horizontal layouts from the main vertical layout
         # Note: The widgets are automatically reparented to the grid when added,

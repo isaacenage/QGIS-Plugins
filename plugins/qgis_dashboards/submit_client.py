@@ -114,7 +114,8 @@ def upload_object(key, data, content_type, timeout_ms=UPLOAD_TIMEOUT_MS):
     """Upload one object into the bucket. Returns ``"ok"`` or ``"conflict"``
     (the key is already taken); raises :class:`PublishError` otherwise."""
     url = "{}/storage/v1/object/{}/{}".format(SUPABASE_URL, BUCKET, key)
-    status, body = _blocking_post(_request(url, content_type), data, timeout_ms)
+    status, body = _blocking_post(
+        _request(url, content_type), data, timeout_ms)
     if 200 <= status < 300:
         return "ok"
     if _is_duplicate(status, body):
@@ -182,7 +183,11 @@ def publish(title, author, html_bytes, thumb_bytes, description=None,
         _tick("Uploading thumbnail…", 0.8)
         try:
             has_thumb = upload_object(
-                object_key(slug, "thumb.png"), thumb_bytes, "image/png") == "ok"
+                object_key(
+                    slug,
+                    "thumb.png"),
+                thumb_bytes,
+                "image/png") == "ok"
         except PublishError:
             has_thumb = False
 

@@ -19,7 +19,7 @@ import unittest
 # page_view (which import qgis) are not loaded.
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from zoom_fit import fit_zoom, clamp_zoom, ZOOM_MIN, ZOOM_MAX, FIT_MARGIN
+from zoom_fit import fit_zoom, clamp_zoom, ZOOM_MIN, ZOOM_MAX, FIT_MARGIN  # noqa: E402
 
 
 class ClampZoomTest(unittest.TestCase):

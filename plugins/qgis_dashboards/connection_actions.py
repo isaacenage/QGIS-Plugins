@@ -41,7 +41,8 @@ def serialize(adjacency, actions):
         tgts = [t for t in tgts if t]
         if not tgts:
             continue
-        edge_sets = {t: set(actions.get((src, t), DEFAULT_ACTIONS)) for t in tgts}
+        edge_sets = {t: set(actions.get((src, t), DEFAULT_ACTIONS))
+                     for t in tgts}
         if all(s == set(DEFAULT_ACTIONS) for s in edge_sets.values()):
             out[src] = sorted(edge_sets)
         else:

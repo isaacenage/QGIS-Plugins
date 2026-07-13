@@ -65,7 +65,8 @@ class ChartSelectionFeedbackTest(unittest.TestCase):
 
     def test_selection_survives_without_being_a_filter_target(self):
         # No source is wired into the chart, so the filtersChanged it emits does
-        # not refresh it (change-detection skips it). The highlight must persist.
+        # not refresh it (change-detection skips it). The highlight must
+        # persist.
         bus = DashboardBus(IFACE)
         el = self._chart(bus)
         el._on_category("West")

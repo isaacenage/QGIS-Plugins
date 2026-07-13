@@ -19,7 +19,13 @@ from qgis.PyQt.QtCore import (
     Qt, QPoint, QRect, QSize, QEasingCurve, QPropertyAnimation, pyqtSignal,
 )
 from qgis.PyQt.QtWidgets import (
-    QFrame, QToolButton, QLabel, QVBoxLayout, QHBoxLayout, QGridLayout, QWidget,
+    QFrame,
+    QToolButton,
+    QLabel,
+    QVBoxLayout,
+    QHBoxLayout,
+    QGridLayout,
+    QWidget,
     QScrollArea,
 )
 
@@ -130,8 +136,13 @@ class ElementPicker(QFrame):
         for i, (key, label) in enumerate(ELEMENT_LABELS.items()):
             tile = self._tile(key, label)
             self._tiles.append(tile)
-            grid.addWidget(tile, i // GRID_COLS, i % GRID_COLS,
-                           Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
+            grid.addWidget(
+                tile,
+                i //
+                GRID_COLS,
+                i %
+                GRID_COLS,
+                Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
         grid.setRowStretch(grid.rowCount(), 1)
         scroll.setWidget(grid_host)
         root.addWidget(scroll, 1)
@@ -209,7 +220,7 @@ QToolButton#pickerClose:hover {{ background:{brand_soft}; color:{accent}; }}
 #pickerTileIcon {{ background:transparent; }}
 """.format(chrome=CHROME["bg"], border=CHROME["border"], text=CHROME["text"],
            muted=CHROME["muted"], accent=CHROME["accent"],
-           selection=CHROME["selection"], brand_soft=CHROME["brand_soft"]))
+           brand_soft=CHROME["brand_soft"]))
 
     def _retint_tiles(self, theme):
         """Repaint each glyph in the fixed chrome tint (theme-independent)."""

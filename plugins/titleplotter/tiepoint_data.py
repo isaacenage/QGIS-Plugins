@@ -50,13 +50,16 @@ def build_search_url(base_url, name="", description="", municipality="",
 
 def row_matches(row, name="", description="", municipality="", province=""):
     """Offline-cache filter with the same semantics as build_search_params."""
-    if name and normalize_name(name) not in normalize_name(str(row.get("name") or "")):
+    if name and normalize_name(name) not in normalize_name(
+            str(row.get("name") or "")):
         return False
     description = (description or "").strip().lower()
-    if description and description not in str(row.get("description") or "").lower():
+    if description and description not in str(
+            row.get("description") or "").lower():
         return False
     municipality = (municipality or "").strip().lower()
-    if municipality and municipality not in str(row.get("municipality") or "").lower():
+    if municipality and municipality not in str(
+            row.get("municipality") or "").lower():
         return False
     province = (province or "").strip()
     if province and str(row.get("province") or "") != province:
@@ -103,8 +106,14 @@ def parse_coordinate(text):
         return None, False
 
 
-def correction_payload(tiepoint, proposed_northing=None, proposed_easting=None,
-                       remarks="", reporter_name="", contact="", plugin_version=""):
+def correction_payload(
+        tiepoint,
+        proposed_northing=None,
+        proposed_easting=None,
+        remarks="",
+        reporter_name="",
+        contact="",
+        plugin_version=""):
     """Assemble the tiepoint_corrections insert payload from the tie point
     being reported plus the user's proposed values."""
     return {

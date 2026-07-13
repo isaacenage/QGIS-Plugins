@@ -10,7 +10,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from scripting import (
+from scripting import (  # noqa: E402
     spec_to_layout, _rect_from_at, DEFAULT_REGION, DEFAULT_GRID,
 )
 
@@ -137,7 +137,9 @@ class TestSpecToLayout(unittest.TestCase):
             "connections": [{"from": "src", "to": ["fixed2"]}],
         })
         self.assertEqual(layout["pages"][0]["elements"][0]["id"], "fixed1")
-        self.assertEqual(layout["pages"][0]["connections"], {"fixed1": ["fixed2"]})
+        self.assertEqual(
+            layout["pages"][0]["connections"], {
+                "fixed1": ["fixed2"]})
 
     def test_theme_dict_passthrough(self):
         layout, _ = spec_to_layout({
@@ -147,7 +149,8 @@ class TestSpecToLayout(unittest.TestCase):
         self.assertEqual(layout["theme"], {"accent": "#ff0000"})
 
     def test_theme_preset_name_resolved(self):
-        resolve = lambda name: {"accent": "#38bdf8"} if name == "Midnight Slate" else {}
+        def resolve(name):
+            return {"accent": "#38bdf8"} if name == "Midnight Slate" else {}
         layout, _ = spec_to_layout({
             "theme": "Midnight Slate",
             "elements": [{"type": "text", "text": "x"}],
@@ -155,13 +158,18 @@ class TestSpecToLayout(unittest.TestCase):
         self.assertEqual(layout["theme"], {"accent": "#38bdf8"})
 
     def test_theme_preset_with_overrides(self):
-        resolve = lambda name: {"accent": "#000000", "window_bg": "#111111"}
+        def resolve(name):
+            return {"accent": "#000000", "window_bg": "#111111"}
         layout, _ = spec_to_layout({
             "theme": {"preset": "X", "accent": "#ffffff"},
             "elements": [{"type": "text", "text": "x"}],
         }, resolve_theme=resolve)
-        self.assertEqual(layout["theme"]["accent"], "#ffffff")     # override wins
-        self.assertEqual(layout["theme"]["window_bg"], "#111111")  # preset kept
+        self.assertEqual(
+            layout["theme"]["accent"],
+            "#ffffff")     # override wins
+        self.assertEqual(
+            layout["theme"]["window_bg"],
+            "#111111")  # preset kept
 
     def test_locked_only_when_specified(self):
         a, _ = spec_to_layout({"elements": [{"type": "text", "text": "x"}]})

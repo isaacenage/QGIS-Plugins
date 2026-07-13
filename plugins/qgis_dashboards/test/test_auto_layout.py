@@ -10,7 +10,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from auto_layout import compute_auto_layout, shape_for
+from auto_layout import compute_auto_layout, shape_for  # noqa: E402
 
 
 def _overlap(a, b):
@@ -110,7 +110,9 @@ class AutoLayoutTest(unittest.TestCase):
         self.assertEqual(len(ys), 2, "7 indicators should wrap to two rows")
         # each row's cells are equal width and adjacent
         for row_y in ys:
-            row = sorted((r for r in rects if r[1] == row_y), key=lambda r: r[0])
+            row = sorted(
+                (r for r in rects if r[1] == row_y),
+                key=lambda r: r[0])
             widths = [r[2] for r in row]
             self.assertLessEqual(max(widths) - min(widths), 1)
             for a, b in zip(row, row[1:]):

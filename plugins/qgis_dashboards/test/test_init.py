@@ -8,10 +8,10 @@ __license__ = "GPL"
 __copyright__ = 'Copyright 2012, Australia Indonesia Facility for '
 __copyright__ += 'Disaster Reduction'
 
-import os
-import unittest
-import logging
-import configparser
+import os  # noqa: E402
+import unittest  # noqa: E402
+import logging  # noqa: E402
+import configparser  # noqa: E402
 
 LOGGER = logging.getLogger('QGIS')
 
@@ -51,7 +51,7 @@ class TestInit(unittest.TestCase):
         parser.optionxform = str
         parser.read(file_path)
         message = 'Cannot find a section named "general" in %s' % file_path
-        assert parser.has_section('general'), message
+        self.assertTrue(parser.has_section('general'), message)
         metadata.extend(parser.items('general'))
 
         for expectation in required_metadata:
@@ -59,6 +59,7 @@ class TestInit(unittest.TestCase):
                 expectation, file_path))
 
             self.assertIn(expectation, dict(metadata), message)
+
 
 if __name__ == '__main__':
     unittest.main()

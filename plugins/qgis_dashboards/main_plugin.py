@@ -23,7 +23,7 @@
 """
 import os.path
 
-from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt
+from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
 from qgis.PyQt.QtGui import QIcon
 # QAction lives in QtWidgets on Qt5 (PyQt5) but moved to QtGui on Qt6 (PyQt6);
 # import defensively so the plugin works across QGIS 3.22 – 4.99.
@@ -176,7 +176,8 @@ class qgisdashboard:
     # These thin wrappers let an automation client build dashboards without the
     # GUI: ``plugins['qgis_dashboards'].build_dashboard(spec)`` etc. The heavy
     # lifting lives in ``scripting.py`` (a stable, documented facade). Each
-    # ensures the window exists first, so a single call works from a cold start.
+    # ensures the window exists first, so a single call works from a cold
+    # start.
 
     def build_dashboard(self, spec, show=True, save=True):
         """Build a whole dashboard from a *spec* dict (see :func:`api_reference`).

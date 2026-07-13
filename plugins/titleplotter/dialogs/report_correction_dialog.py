@@ -43,8 +43,7 @@ class ReportCorrectionDialog(QDialog):
                 self.tiepoint.get("province") or "",
                 "—" if current_n is None else current_n,
                 "—" if current_e is None else current_e,
-            )
-        )
+            ))
         summary.setWordWrap(True)
         summary.setTextFormat(Qt.TextFormat.RichText)
         layout.addWidget(summary)

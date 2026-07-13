@@ -11,7 +11,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from tile_snap import rects_overlap, snap_rect, nearest_free
+from tile_snap import rects_overlap, snap_rect, nearest_free  # noqa: E402
 
 
 class TestRectsOverlap(unittest.TestCase):
@@ -39,8 +39,10 @@ class TestSnapRect(unittest.TestCase):
         self.assertEqual(snapped, (310, 0, 200, 200))
 
     def test_right_edge_snaps_to_page_edge(self):
-        # tile right edge near the region's right edge (1000) snaps flush to it.
-        rect = (790, 0, 200, 200)   # right edge at 990, within threshold of 1000
+        # tile right edge near the region's right edge (1000) snaps flush to
+        # it.
+        # right edge at 990, within threshold of 1000
+        rect = (790, 0, 200, 200)
         snapped = snap_rect(rect, [], self.region, gap=10, threshold=20)
         self.assertEqual(snapped, (800, 0, 200, 200))  # x moved so x+w == 1000
 
@@ -61,7 +63,8 @@ class TestSnapRect(unittest.TestCase):
         left = (0, 0, 100, 200)      # right=100
         right = (700, 0, 100, 200)   # left=700
         rect = (105, 0, 100, 200)
-        snapped = snap_rect(rect, [left, right], self.region, gap=10, threshold=20)
+        snapped = snap_rect(rect, [left, right],
+                            self.region, gap=10, threshold=20)
         self.assertEqual(snapped, (110, 0, 100, 200))
 
 

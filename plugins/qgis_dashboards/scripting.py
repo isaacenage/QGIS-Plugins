@@ -50,7 +50,8 @@ CHART_TYPE_NAMES = (
     "histogram", "candlestick",
 )
 
-# Element types that bind to no vector layer (a "layer" key is ignored for them).
+# Element types that bind to no vector layer (a "layer" key is ignored for
+# them).
 _LAYERLESS = frozenset(("text", "image", "header", "legend"))
 
 # Keys handled specially per element (everything else is copied into config).
@@ -364,7 +365,8 @@ def add_element(window, type_name, config=None, at=None, layer=None,
     element_id = tile.element.id
 
     if connect_to:
-        targets = [connect_to] if isinstance(connect_to, str) else list(connect_to)
+        targets = [connect_to] if isinstance(
+            connect_to, str) else list(connect_to)
         window.bus.set_targets(element_id, targets)
     return element_id
 

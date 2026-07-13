@@ -112,7 +112,8 @@ class SettingsPanel(QWidget):
         self._gap = int(gap)
         cw, ch = canvas_size or (CANVAS_PRESETS[0][1], CANVAS_PRESETS[0][2])
         self._canvas_w, self._canvas_h = int(cw), int(ch)
-        # guard so programmatic spinner/combo updates don't re-enter the callback
+        # guard so programmatic spinner/combo updates don't re-enter the
+        # callback
         self._canvas_syncing = False
 
         # Settings is CHROME: hints read from the fixed CHROME palette so a dark
@@ -198,7 +199,8 @@ QToolButton#settingsRailButton:checked {{ background:{brand_soft}; }}
             btn.setIconSize(QSize(RAIL_ICON_SIZE, RAIL_ICON_SIZE))
             icon = monochrome_icon(icon_key, CHROME["text"])
             if icon.isNull():
-                btn.setText(label[:2])      # graceful fallback if QtSvg is missing
+                # graceful fallback if QtSvg is missing
+                btn.setText(label[:2])
             else:
                 btn.setIcon(icon)
             btn.clicked.connect(
@@ -437,11 +439,14 @@ QToolButton#settingsRailButton:checked {{ background:{brand_soft}; }}
         sizes = QFormLayout()
         sizes.setContentsMargins(0, 0, 0, 0)
         sizes.setHorizontalSpacing(12)
-        self._base_size_spin = self._size_spin(theme.font_size, 6, 48, "font_size")
+        self._base_size_spin = self._size_spin(
+            theme.font_size, 6, 48, "font_size")
         sizes.addRow("Base text", self._base_size_spin)
-        self._title_size_spin = self._size_spin(theme.title_size, 8, 48, "title_size")
+        self._title_size_spin = self._size_spin(
+            theme.title_size, 8, 48, "title_size")
         sizes.addRow("Element title", self._title_size_spin)
-        self._value_size_spin = self._size_spin(theme.value_size, 10, 96, "value_size")
+        self._value_size_spin = self._size_spin(
+            theme.value_size, 10, 96, "value_size")
         sizes.addRow("Indicator value", self._value_size_spin)
         lay.addLayout(sizes)
 
