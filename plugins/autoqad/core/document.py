@@ -112,6 +112,27 @@ def new_handle():
     return uuid.uuid4().hex[:16].upper()
 
 
+def is_alive(layer):
+    """True when *layer* is a live, valid vector layer.
+
+    A PyQGIS wrapper outlives the C++ object it points at. When the user
+    removes a layer from the project, QGIS destroys the C++ ``QgsVectorLayer``
+    but any Python reference we still hold remains — and touching it raises
+    ``RuntimeError: wrapped C/C++ object ... has been deleted``.
+
+    Every access to a stored layer goes through this guard, because the
+    alternative is that deleting a layer crashes whatever happens to touch it
+    next — including the mouse-move pipeline, which touches it 60 times a
+    second.
+    """
+    if layer is None:
+        return False
+    try:
+        return layer.isValid()
+    except RuntimeError:
+        return False
+
+
 class DrawingDocument(object):
     """Owns a drawing's three QGIS layers, its CAD layer table and its styling.
 
@@ -132,35 +153,109 @@ class DrawingDocument(object):
 
     @property
     def is_open(self):
-        return bool(self._tables) and all(
-            layer is not None and layer.isValid()
-            for layer in self._tables.values())
+        """True when all three tables are present and still alive.
+
+        Prunes dead references as a side effect, so a drawing whose layers the
+        user deleted reports closed rather than raising.
+        """
+        self.prune_dead()
+        return len(self._tables) == len(TABLES)
+
+    def prune_dead(self):
+        """Drop references to layers whose C++ object is gone.
+
+        Returns True if anything was pruned. Safe to call from the hot path —
+        it is a handful of cheap guarded calls.
+        """
+        dead = [name for name, layer in self._tables.items()
+                if not is_alive(layer)]
+        for name in dead:
+            del self._tables[name]
+        return bool(dead)
 
     def table(self, name):
-        """Return the :class:`QgsVectorLayer` for *name*, or ``None``."""
-        return self._tables.get(name)
+        """Return the live :class:`QgsVectorLayer` for *name*, or ``None``."""
+        layer = self._tables.get(name)
+        if layer is not None and not is_alive(layer):
+            del self._tables[name]
+            return None
+        return layer
 
     def all_tables(self):
-        return [self._tables[n] for n in TABLES if n in self._tables]
+        """Return every live table, in canonical order."""
+        return [layer for layer in (self.table(n) for n in TABLES)
+                if layer is not None]
 
     def crs(self):
         for layer in self.all_tables():
             return layer.crs()
         return self.project.crs()
 
+    def on_layers_removed(self, layer_ids):
+        """Drop our references when the project removes layers.
+
+        Connected to ``QgsProject.layersWillBeRemoved``, which fires *before*
+        the C++ objects are destroyed — so this is the one moment we can still
+        identify them safely.
+        """
+        removed = set(layer_ids or [])
+        if not removed:
+            return
+        for name in list(self._tables):
+            layer = self._tables[name]
+            try:
+                if layer.id() in removed:
+                    del self._tables[name]
+            except RuntimeError:
+                del self._tables[name]
+
     def ensure_open(self, crs=None):
         """Open the drawing, creating storage if needed. Returns True on success.
 
-        Re-adopts layers already in the project (reopening a saved ``.qgz``)
-        before creating anything new, so loading a project twice does not
-        duplicate the tables.
+        Order matters. Adopting layers already in the project comes first, so
+        reopening a ``.qgz`` does not duplicate the tables. Reloading from a
+        known GeoPackage comes next, so deleting the layers from the layer tree
+        and then drawing again *recovers the existing drawing* rather than
+        overwriting it. Only then is anything created.
         """
         if self.is_open:
             return True
         if self._adopt_project_layers():
             self.load_state()
             return True
+        if self._reload_from_geopackage():
+            self.load_state()
+            return True
         return self.create(crs)
+
+    def _reload_from_geopackage(self):
+        """Re-add the tables from an existing GeoPackage on disk.
+
+        This is what makes deleting the layers from the layer tree
+        non-destructive: the data is still in the ``.gpkg``, so we reattach to
+        it instead of writing fresh empty tables over the top.
+        """
+        path = self._gpkg_path or self.default_gpkg_path()
+        if not path or not os.path.exists(path):
+            return False
+
+        found = {}
+        for table in TABLES:
+            layer = QgsVectorLayer(
+                "{0}|layername={1}".format(path, table), table, "ogr")
+            if not layer.isValid():
+                return False
+            if layer.fields().indexOf(FIELD_HANDLE) < 0:
+                return False
+            found[table] = layer
+
+        self._tables = found
+        for name, layer in found.items():
+            layer.setCustomProperty("autoqad/table", name)
+            self.project.addMapLayer(layer)
+        self._gpkg_path = path
+        self.apply_renderers()
+        return True
 
     def _adopt_project_layers(self):
         """Find existing AutoQAD tables already loaded in the project."""
@@ -300,9 +395,12 @@ class DrawingDocument(object):
         if not path:
             return False
 
-        snapshot = {name: list(layer.getFeatures())
-                    for name, layer in self._tables.items()}
-        old = list(self._tables.values())
+        snapshot = {}
+        for name in TABLES:
+            layer = self.table(name)
+            if layer is not None:
+                snapshot[name] = list(layer.getFeatures())
+        old = [layer for layer in self._tables.values() if is_alive(layer)]
         crs = self.crs()
 
         created = self._create_geopackage(path, crs)

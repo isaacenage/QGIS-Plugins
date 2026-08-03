@@ -59,6 +59,9 @@ class PreviewManager(object):
         self._cursor_marker.hide()
 
         self._descriptor = None
+        #: Anchor the tracking ray is drawn through — the command's base point,
+        #: not the cursor, or the ray would slide along with the mouse.
+        self._tracking_base = None
         self._items = [self._rubber, self._ghost, self._tracking,
                        self._marker, self._highlight]
 
@@ -198,7 +201,7 @@ class PreviewManager(object):
         # Draw the tracking ray well past the cursor so it reads as infinite.
         extent = self.canvas.extent()
         reach = max(extent.width(), extent.height())
-        base = getattr(self, "_tracking_base", None) or point
+        base = self._tracking_base or point
         far = construct.point_at(base, angle, reach)
         near = construct.point_at(base, angle, -reach)
         self._tracking.setToGeometry(

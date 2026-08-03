@@ -26,7 +26,8 @@ class AutoQadMapTool(QgsMapTool):
     #: Emitted when the tool is deactivated, so the UI can untick its button.
     deactivated = pyqtSignal()
 
-    def __init__(self, canvas, runner, pointer, preview, variables, document):
+    def __init__(self, canvas, runner, pointer, preview, variables, document,
+                 crosshair=None, dyninput=None):
         super().__init__(canvas)
         self.canvas = canvas
         self.runner = runner
@@ -34,6 +35,8 @@ class AutoQadMapTool(QgsMapTool):
         self.preview = preview
         self.variables = variables
         self.document = document
+        self.crosshair = crosshair
+        self.dyninput = dyninput
         self._selection = []
         self._window_anchor = None
 
@@ -45,12 +48,27 @@ class AutoQadMapTool(QgsMapTool):
 
     def activate(self):
         super().activate()
-        self.setCursor(Qt.CursorShape.CrossCursor)
+        # The crosshair replaces the OS pointer entirely; only fall back to a
+        # system cross when it is switched off.
+        if self.crosshair is not None and self.variables.get("CROSSHAIR"):
+            # Set it on the tool as well as the canvas: QgsMapTool re-applies
+            # its own cursor on activation, and would otherwise overwrite the
+            # blank one the crosshair installs.
+            self.setCursor(Qt.CursorShape.BlankCursor)
+            self.crosshair.set_visible(True)
+        else:
+            self.setCursor(Qt.CursorShape.CrossCursor)
+        if self.dyninput is not None:
+            self.dyninput.set_visible(True)
         self.pointer.set_enabled(True)
 
     def deactivate(self):
         self.pointer.set_enabled(False)
         self.preview.clear()
+        if self.crosshair is not None:
+            self.crosshair.set_visible(False)
+        if self.dyninput is not None:
+            self.dyninput.set_visible(False)
         super().deactivate()
         self.deactivated.emit()
 
@@ -60,17 +78,61 @@ class AutoQadMapTool(QgsMapTool):
     # ---- pointer feedback ----
 
     def _on_point(self, point):
-        self.preview.update(point, self.pointer.tracking_angle,
-                            self.pointer.current_snap)
+        self._refresh_overlays()
         self.pointMoved.emit(point)
 
     def _on_snap(self, _snap):
-        self.preview.update(self.pointer.current_point,
-                            self.pointer.tracking_angle,
-                            self.pointer.current_snap)
+        self._refresh_overlays()
 
     def _on_tracking(self, _angle):
         self.preview.set_tracking_base(self.pointer.base_point)
+        self._refresh_overlays()
+
+    def _refresh_overlays(self):
+        """Redraw every cursor-following overlay. One call per processed frame.
+
+        Crosshair, rubber band, snap marker and dynamic input all move
+        together, driven by the single resolved point — so they can never
+        disagree about where the cursor is.
+        """
+        point = self.pointer.current_point
+        if point is None:
+            return
+
+        self.preview.update(point, self.pointer.tracking_angle,
+                            self.pointer.current_snap)
+
+        if self.crosshair is not None:
+            self.crosshair.move_to(point)
+
+        if self.dyninput is not None:
+            prompt = self.runner.prompt
+            base = self.runner.base_point
+            self.dyninput.update(
+                self.pointer.current_screen, point,
+                base_point=base,
+                locked_angle=self.pointer.tracking_angle,
+                prompt_text=self._dyn_prompt_text(prompt),
+                kind=self._dyn_kind(prompt, base))
+
+    @staticmethod
+    def _dyn_kind(prompt, base_point):
+        """Which readout the current prompt wants."""
+        if prompt is None:
+            return "first"
+        if prompt.kind in ("distance", "angle"):
+            return prompt.kind
+        return "point" if base_point is not None else "first"
+
+    @staticmethod
+    def _dyn_prompt_text(prompt):
+        """The prompt line, with its keyword options, shown under the cursor."""
+        if prompt is None:
+            return ""
+        text = prompt.message
+        if prompt.options:
+            text += " [{0}]".format("/".join(prompt.options))
+        return text
 
     # ---- events ----
 

@@ -89,6 +89,11 @@ class PointerTracker(QObject):
         return self._current_point
 
     @property
+    def current_screen(self):
+        """The last raw screen position — where the readout boxes go."""
+        return self._raw_screen
+
+    @property
     def current_snap(self):
         return self._snap
 
@@ -152,7 +157,13 @@ class PointerTracker(QObject):
         # 4. object snap — one indexed C++ query, and only when enabled.
         snap = None
         if self.snap_engine is not None and self.variables.osnap_enabled:
-            snap = self.snap_engine.snap(point, self._base_point)
+            try:
+                snap = self.snap_engine.snap(point, self._base_point)
+            except RuntimeError:
+                # A layer was destroyed between frames. The document prunes
+                # dead references on its next access; losing one frame of
+                # snapping beats breaking the mouse loop with a traceback.
+                snap = None
             if snap is not None:
                 point = snap.point
                 # An explicit snap overrides the constraint: the user asked for

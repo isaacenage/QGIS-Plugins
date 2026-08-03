@@ -91,7 +91,9 @@ DEFINITIONS = {v.name: v for v in (
     _d("LTSCALE", "float", 1.0, "Global linetype scale."),
     _d("LWDISPLAY", "bool", True, "Display lineweights on screen."),
     _d("ORTHOMODE", "bool", False, "Constrain the cursor to the axes."),
-    _d("POLARMODE", "bool", False, "Polar tracking on."),
+    # On by default, as in AutoCAD: polar tracking is what makes the angle
+    # readout and the alignment ray appear while dragging.
+    _d("POLARMODE", "bool", True, "Polar tracking on."),
     _d("POLARANG", "float", 45.0, "Polar tracking increment, in degrees."),
     _d("OSMODE", "int", DEFAULT_OSMODE, "Running object-snap bitmask."),
     _d("OSNAPON", "bool", True, "Running object snaps enabled."),
@@ -117,6 +119,10 @@ DEFINITIONS = {v.name: v for v in (
     _a("APERTURE", "int", 10, "Object-snap target height, in pixels."),
     _a("PICKBOX", "int", 5, "Entity-selection pick box, in pixels."),
     _a("CURSORSIZE", "int", 5, "Crosshair size, as a percent of the screen."),
+    _a("CURSORCOLOR", "str", "#3c4650", "Crosshair colour."),
+    _a("PICKBOXCOLOR", "str", "#3c4650", "Pick box and aperture colour."),
+    _a("CROSSHAIR", "bool", True,
+       "Draw the AutoCAD crosshair instead of the system pointer."),
     _a("AUTOSNAPSIZE", "int", 10, "Snap marker size, in pixels."),
     _a("AUTOSNAPCOLOR", "str", "#f2c200", "Snap marker colour."),
     _a("TRACKCOLOR", "str", "#7d8b99", "Tracking/alignment line colour."),

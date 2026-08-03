@@ -22,6 +22,8 @@ from .core.document import DrawingDocument
 from .core.variables import VariableStore
 from .engine.command import CommandContext
 from .engine.runner import CommandRunner
+from .input.crosshair import CrosshairCursor
+from .input.dyninput import DynamicInput
 from .input.maptool import AutoQadMapTool
 from .input.pointer import PointerTracker
 from .input.rubber import PreviewManager
@@ -62,10 +64,13 @@ class AutoQadController(QObject):
                                       self.snap_engine, self)
         self.context.pointer = self.pointer
         self.preview = PreviewManager(self.canvas, self.variables)
+        self.crosshair = CrosshairCursor(self.canvas, self.variables)
+        self.dyninput = DynamicInput(self.canvas, self.variables)
 
         self.map_tool = AutoQadMapTool(
             self.canvas, self.runner, self.pointer, self.preview,
-            self.variables, self.document)
+            self.variables, self.document,
+            crosshair=self.crosshair, dyninput=self.dyninput)
 
         self.command_bar = CommandBarDock(self.variables, self.registry,
                                           iface.mainWindow())
@@ -91,6 +96,25 @@ class AutoQadController(QObject):
 
         self.pointer.pointChanged.connect(self._on_point_changed)
         self.variables.changed.connect(self._on_variable_changed)
+
+        # Fires *before* the C++ layers are destroyed — the one moment we can
+        # still identify them and drop our references safely.
+        QgsProject.instance().layersWillBeRemoved.connect(
+            self._on_layers_will_be_removed)
+
+    def _on_layers_will_be_removed(self, layer_ids):
+        """Release references to drawing tables the user is deleting."""
+        was_open = bool(self.document._tables)
+        self.document.on_layers_removed(layer_ids)
+
+        if was_open and not self.document.is_open:
+            self.runner.cancel()
+            self.preview.clear()
+            self.pointer.reset()
+            if self._active:
+                self._write(
+                    "Drawing tables were removed. The next command reopens "
+                    "them from the GeoPackage if it still exists.")
 
     # ---- lifecycle ----
 
@@ -134,6 +158,8 @@ class AutoQadController(QObject):
             return
         self.runner.cancel()
         self.preview.clear()
+        self.crosshair.set_visible(False)
+        self.dyninput.set_visible(False)
         self.pointer.reset()
 
         if self.canvas.mapTool() is self.map_tool:
@@ -214,6 +240,13 @@ class AutoQadController(QObject):
         if name in ("RUBBERCOLOR", "TRACKCOLOR", "AUTOSNAPCOLOR",
                     "HIGHLIGHTCOLOR", "*"):
             self.preview.apply_colours()
+        if name in ("CURSORCOLOR", "PICKBOXCOLOR", "AUTOSNAPCOLOR", "*"):
+            self.crosshair.apply_colours()
+        if name in ("CROSSHAIR", "*") and self._active:
+            self.crosshair.set_visible(bool(self.variables.get("CROSSHAIR")))
+        if name in ("DYNMODE", "*"):
+            self.dyninput.set_visible(
+                self._active and bool(self.variables.get("DYNMODE")))
 
     # ---- dialogs ----
 
@@ -306,12 +339,24 @@ class AutoQadController(QObject):
     # ---- teardown ----
 
     def cleanup(self):
-        """Release every canvas item, dock and dialog."""
-        self.deactivate()
+        """Release every canvas item, dock and dialog.
+
+        The project instance outlives this controller, so the connection made
+        in ``_wire`` must come off or it fires into a deleted object on the
+        next layer removal.
+        """
         try:
-            self.preview.dispose()
-        except (RuntimeError, AttributeError):
+            QgsProject.instance().layersWillBeRemoved.disconnect(
+                self._on_layers_will_be_removed)
+        except (TypeError, RuntimeError):
             pass
+
+        self.deactivate()
+        for overlay in (self.preview, self.crosshair, self.dyninput):
+            try:
+                overlay.dispose()
+            except (RuntimeError, AttributeError):
+                pass
 
         for dialog in self._dialogs.values():
             try:
