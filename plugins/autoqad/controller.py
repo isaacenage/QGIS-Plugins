@@ -29,7 +29,7 @@ from .input.pointer import PointerTracker
 from .input.rubber import PreviewManager
 from .input.snap import SnapEngine
 from .ui.command_bar import CommandBarDock
-from .ui.rail import ToolRailDock
+from .ui.tool_palette import ToolPaletteDock
 
 
 class AutoQadController(QObject):
@@ -74,7 +74,7 @@ class AutoQadController(QObject):
 
         self.command_bar = CommandBarDock(self.variables, self.registry,
                                           iface.mainWindow())
-        self.rail = ToolRailDock(iface.mainWindow())
+        self.palette = ToolPaletteDock(iface.mainWindow())
 
         self._dialogs = {}
         self._active = False
@@ -86,7 +86,7 @@ class AutoQadController(QObject):
         self.command_bar.submitted.connect(self._on_submitted)
         self.command_bar.cancelled.connect(self._on_cancelled)
         self.command_bar.toggled.connect(self._on_toggle)
-        self.rail.commandRequested.connect(self.run_command)
+        self.palette.commandRequested.connect(self.run_command)
 
         self.runner.promptChanged.connect(self._on_prompt_changed)
         self.runner.messaged.connect(self._write)
@@ -137,10 +137,10 @@ class AutoQadController(QObject):
 
         main_window = self.iface.mainWindow()
         main_window.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea,
-                                  self.rail)
+                                  self.palette)
         main_window.addDockWidget(Qt.DockWidgetArea.BottomDockWidgetArea,
                                   self.command_bar)
-        self.rail.show()
+        self.palette.show()
         self.command_bar.show()
 
         self.canvas.setMapTool(self.map_tool)
@@ -165,7 +165,7 @@ class AutoQadController(QObject):
         if self.canvas.mapTool() is self.map_tool:
             self.canvas.unsetMapTool(self.map_tool)
 
-        self.rail.hide()
+        self.palette.hide()
         self.command_bar.hide()
 
         self._active = False
@@ -367,7 +367,7 @@ class AutoQadController(QObject):
         self._dialogs = {}
 
         main_window = self.iface.mainWindow()
-        for dock in (self.rail, self.command_bar):
+        for dock in (self.palette, self.command_bar):
             try:
                 main_window.removeDockWidget(dock)
                 dock.deleteLater()

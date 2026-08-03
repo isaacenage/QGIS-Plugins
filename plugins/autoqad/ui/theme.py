@@ -51,6 +51,65 @@ CANVAS = {
     "is_dark": False,
 }
 
+#: The tool palette is **deliberately dark and fixed**, independent of both
+#: :data:`PALETTE` above and whatever theme QGIS is running. CAD tool palettes
+#: are dark with white glyphs in every application that has one, and a plugin
+#: that flips between light and dark with the host theme reads as unfinished.
+#: These values are never derived from a QGIS style.
+TOOL_PALETTE = {
+    "bg": "#33373b",           # palette body
+    "title_bg": "#2b2f33",     # dock title bar
+    "icon": "#ffffff",         # glyph tint — white outline
+    "text": "#e6e9ec",         # title text
+    "hover": "rgba(255, 255, 255, 0.12)",
+    "pressed": "rgba(255, 255, 255, 0.20)",
+    "separator": "rgba(255, 255, 255, 0.16)",
+}
+
+
+def tool_palette_qss():
+    """Return the fixed dark stylesheet for the tool palette dock."""
+    return """
+QDockWidget#aqToolPalette {{
+    color:{text}; background:{bg};
+}}
+QDockWidget#aqToolPalette::title {{
+    background:{title_bg}; color:{text};
+    padding:6px 10px; border:none; font-weight:600;
+}}
+#aqPaletteBody, #aqPaletteScroll, #aqPaletteScroll > QWidget > QWidget {{
+    background:{bg}; border:none;
+}}
+QToolButton#aqToolButton {{
+    background:transparent; border:1px solid transparent; border-radius:6px;
+}}
+QToolButton#aqToolButton:hover {{
+    background:{hover}; border-color:{separator};
+}}
+QToolButton#aqToolButton:pressed, QToolButton#aqToolButton:checked {{
+    background:{pressed};
+}}
+#aqPaletteScroll QScrollBar:vertical {{
+    background:transparent; width:10px; margin:2px;
+}}
+#aqPaletteScroll QScrollBar::handle:vertical {{
+    background:{separator}; border-radius:4px; min-height:24px;
+}}
+#aqPaletteScroll QScrollBar::handle:vertical:hover {{
+    background:rgba(255, 255, 255, 0.30);
+}}
+#aqPaletteScroll QScrollBar::add-line, #aqPaletteScroll QScrollBar::sub-line {{
+    width:0; height:0;
+}}
+#aqPaletteScroll QScrollBar::add-page, #aqPaletteScroll QScrollBar::sub-page {{
+    background:transparent;
+}}
+QToolTip {{
+    background:#111827; color:#ffffff; border:none; border-radius:6px;
+    padding:5px 8px; font-size:11px;
+}}
+""".format(**TOOL_PALETTE)
+
 
 def background_is_dark():
     """True when model space uses a dark background (ACI 7 draws white)."""
