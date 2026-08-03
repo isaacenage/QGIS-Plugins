@@ -1,0 +1,43 @@
+# This file contains metadata for your plugin.
+# This file should be included when you package your plugin.
+
+# Mandatory items:
+
+[general]
+name=AutoQAD
+qgisMinimumVersion=3.22
+qgisMaximumVersion=4.99
+description=CAD-style drawing in QGIS — an AutoCAD-like command line, object snaps, precision input and true AutoCAD symbology (ACI colors, linetypes, lineweights, hatch patterns). By Isaac Enage (byZenterra).
+version=0.1
+author=Isaac Enage
+email=isaacenagework@gmail.com
+
+about=AutoQAD by Isaac Enage brings CAD drafting to QGIS. Draw with an AutoCAD-style command line (LINE, PLINE, ARC, CIRCLE, RECTANG, OFFSET, TRIM, FILLET, HATCH …), snap with full object snaps (endpoint, midpoint, center, intersection, perpendicular, tangent, quadrant), and constrain with ortho and polar tracking. Entities carry real AutoCAD symbology — the 256-color ACI palette, acad.lin linetypes, millimetre lineweights and acad.pat hatch patterns — so drawings look like CAD, not like GIS. Built for floor plans and site drawings, and scriptable by LLM agents through QGIS MCP. Developed and maintained by Isaac Enage of byZenterra.
+
+tracker=https://github.com/isaacenage/QGIS-Plugins/issues
+repository=https://github.com/isaacenage/QGIS-Plugins
+# End of mandatory metadata
+
+# Recommended items:
+
+hasProcessingProvider=no
+changelog=0.1
+      - Initial release: command engine, object snaps, precision input,
+        AutoCAD symbology (ACI / linetypes / lineweights / hatches),
+        layer manager, draw + modify commands, DXF export, MCP scripting API
+
+# Tags are comma separated with spaces allowed
+tags=cad,drawing,drafting,autocad,dxf,hatch,linetype,snap,polyline,floorplan,digitizing,isaac enage,byzenterra
+
+homepage=https://qgis.byzenterra.org/autoqad
+category=Vector
+icon=icon.png
+license=GPL-3.0
+# experimental flag
+experimental=True
+
+# deprecated flag (applies to the whole plugin, not just a single version)
+deprecated=False
+
+# If the plugin can run on QGIS Server.
+server=False
