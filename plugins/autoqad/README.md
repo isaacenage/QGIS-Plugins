@@ -145,16 +145,32 @@ Full schema: `aq.api_reference()`.
 
 ## Install
 
-Copy or symlink this folder into your QGIS plugin directory, then enable
-**AutoQAD** in *Plugins → Manage and Install Plugins*.
+```bash
+python install.py            # or: make deploy
+```
+
+Then restart QGIS and enable **AutoQAD** in *Plugins → Manage and Install
+Plugins*. No build step is required. `install.py --uninstall` removes it,
+`--profile <name>` targets a non-default profile.
+
+> **Do not install with `cp -r`.** When the destination already exists,
+> `cp -r plugins/autoqad "$PROFILE/python/plugins/"` copies the source *into*
+> the existing folder rather than over it, producing a plugin tree nested
+> inside one of its own subpackages. The symptom is an `ImportError` naming
+> something that is plainly defined in the source — because the file being
+> imported is not the file you are looking at. `install.py` removes the
+> destination first and verifies the result, so it is safe to re-run.
+
+Installing from the packaged zip (*Plugins → Install from ZIP*) is also safe;
+QGIS replaces the folder rather than merging into it.
+
+Profile locations, if you need them:
 
 ```
 Windows  %APPDATA%\QGIS\QGIS3\profiles\default\python\plugins\
 Linux    ~/.local/share/QGIS/QGIS3/profiles/default/python/plugins/
 macOS    ~/Library/Application Support/QGIS/QGIS3/profiles/default/python/plugins/
 ```
-
-No build step is required.
 
 **Optional:** install [`ezdxf`](https://ezdxf.mozman.at/) for full-fidelity DXF
 export (layer table, true arcs, hatch patterns). Without it, AutoQAD falls back

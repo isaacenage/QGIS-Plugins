@@ -19,7 +19,7 @@ PY_FILES = \
 	controller.py \
 	scripting.py
 
-EXTRAS = metadata.txt icon.png LICENSE README.md
+EXTRAS = metadata.txt icon.png LICENSE README.md install.py
 
 EXTRA_DIRS = core engine input geom style commands ui io
 
@@ -57,17 +57,20 @@ test: compile
 	@echo "----------------------------------------------"
 	PYTHONPATH=$(shell pwd) python -m pytest test/ -v
 
+# Install into the QGIS profile.
+#
+# This delegates to install.py rather than using cp -r, deliberately. When the
+# destination already exists, `cp -r src dest/` copies INTO it instead of over
+# it, which silently produces a plugin tree nested inside one of its own
+# subpackages — and an ImportError naming something that is plainly defined in
+# the source. install.py removes the destination first and verifies the result.
 deploy: compile
-	@echo "----------------------------------------------"
-	@echo "Deploying AutoQAD to $(HOME)/$(QGISDIR)/python/plugins"
-	@echo "----------------------------------------------"
-	mkdir -p $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
-	cp -vf $(PY_FILES) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
-	cp -vf $(EXTRAS) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
-	cp -vfr $(EXTRA_DIRS) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
+	python install.py
+
+install: deploy
 
 derase:
-	rm -Rf $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
+	python install.py --uninstall
 
 zip: deploy clean
 	rm -f $(PLUGINNAME).zip
