@@ -479,6 +479,7 @@ class DrawingDocument(object):
             ltscale=1.0 if ltscale is None else ltscale,
             global_ltscale=self.variables.get("LTSCALE"),
             lineweight_display=self.variables.get("LWDISPLAY"),
+            background_is_dark=self.variables.background_is_dark,
             linetype_table=self.linetype_table)
 
     def restyle_layer(self, layer_name):
@@ -517,13 +518,64 @@ class DrawingDocument(object):
                     index_dash: resolved[FIELD_DASH],
                 }
             if updates:
-                table.dataProvider().changeAttributeValues(updates)
+                self._change_attributes(table, updates)
                 touched += len(updates)
                 table.triggerRepaint()
         return touched
 
     def restyle_all(self):
         return sum(self.restyle_layer(name) for name in self.layers.names())
+
+    # ---- writes -------------------------------------------------------------
+    #
+    # Writes go through the layer's **edit buffer** whenever the layer is in
+    # edit mode, and fall back to the provider otherwise. This matters twice
+    # over: the buffer batches a whole command into one disk write instead of
+    # one per entity (a provider write per click is a visible UI stall on a
+    # GeoPackage), and it is what makes Ctrl+Z undo a CAD operation rather
+    # than nothing at all. The provider path remains for headless scripting,
+    # where no edit session is open.
+
+    @staticmethod
+    def _add_features(layer, features):
+        """Add features, returning their ids."""
+        if layer.isEditable():
+            if not layer.addFeatures(features):
+                return []
+            return [f.id() for f in features]
+        ok, added = layer.dataProvider().addFeatures(features)
+        return [f.id() for f in added] if ok else []
+
+    @staticmethod
+    def _delete_features(layer, feature_ids):
+        if layer.isEditable():
+            return layer.deleteFeatures(list(feature_ids))
+        return layer.dataProvider().deleteFeatures(list(feature_ids))
+
+    @staticmethod
+    def _change_geometry(layer, feature_id, geometry):
+        if layer.isEditable():
+            return layer.changeGeometry(feature_id, geometry)
+        return layer.dataProvider().changeGeometryValues(
+            {feature_id: geometry})
+
+    @staticmethod
+    def _change_attributes(layer, updates):
+        if layer.isEditable():
+            ok = True
+            for feature_id, values in updates.items():
+                for index, value in values.items():
+                    ok = layer.changeAttributeValue(
+                        feature_id, index, value) and ok
+            return ok
+        return layer.dataProvider().changeAttributeValues(updates)
+
+    def set_geometry(self, table_name, feature_id, geometry):
+        """Replace one entity's geometry. Returns True on success."""
+        layer = self.table(table_name)
+        if layer is None or geometry is None or geometry.isEmpty():
+            return False
+        return self._change_geometry(layer, feature_id, geometry)
 
     # ---- entity creation ----------------------------------------------------
 
@@ -571,11 +623,11 @@ class DrawingDocument(object):
             if table.fields().indexOf(key) >= 0:
                 feature[key] = value
 
-        ok, added = table.dataProvider().addFeatures([feature])
-        if not ok or not added:
+        added = self._add_features(table, [feature])
+        if not added:
             return None
         table.triggerRepaint()
-        return added[0].id()
+        return added[0]
 
     def add_curve(self, geometry, entity_type="LINE", closed=False, **kwargs):
         extra = dict(kwargs.pop("extra", None) or {})
@@ -614,7 +666,7 @@ class DrawingDocument(object):
         table = self.table(table_name)
         if table is None or not feature_ids:
             return 0
-        if table.dataProvider().deleteFeatures(list(feature_ids)):
+        if self._delete_features(table, feature_ids):
             table.triggerRepaint()
             return len(feature_ids)
         return 0

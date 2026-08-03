@@ -46,11 +46,7 @@ class _SelectionCommand(Command):
 
     def apply_geometry(self, table_name, feature_id, geometry):
         """Replace one entity's geometry."""
-        layer = self.document.table(table_name)
-        if layer is None or geometry is None or geometry.isEmpty():
-            return False
-        return layer.dataProvider().changeGeometryValues(
-            {feature_id: geometry})
+        return self.document.set_geometry(table_name, feature_id, geometry)
 
     def transform_selection(self, selection, transform):
         """Apply *transform(geometry) -> geometry* to every selected entity."""

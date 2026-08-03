@@ -78,7 +78,41 @@ class AutoQadController(QObject):
 
         self._dialogs = {}
         self._active = False
+        #: The user's own canvas colour, restored when CAD mode exits.
+        self._saved_canvas_color = None
         self._wire()
+
+    # ---- CAD mode ----
+    #
+    # Enabling AutoQAD puts QGIS into model space: the canvas goes black and
+    # ACI 7 — the default colour of layer "0" and therefore of most entities —
+    # resolves to white instead of black. That is not decoration; a CAD drawing
+    # is authored against a dark background and its default colour is defined
+    # relative to it, so a white canvas would render the whole drawing in the
+    # one colour that disappears against it.
+    #
+    # The user's own canvas colour is saved and restored on exit, so turning
+    # the plugin off leaves their project exactly as they set it up.
+
+    def _enter_cad_mode(self):
+        from qgis.PyQt.QtGui import QColor
+
+        if self._saved_canvas_color is None:
+            self._saved_canvas_color = self.canvas.canvasColor()
+
+        self.canvas.setCanvasColor(QColor(self.variables.get("CANVASCOLOR")))
+        self.canvas.refresh()
+        # Re-resolve every entity's colour against the new background.
+        if self.document.is_open:
+            self.document.restyle_all()
+            self.document.refresh()
+
+    def _exit_cad_mode(self):
+        if self._saved_canvas_color is None:
+            return
+        self.canvas.setCanvasColor(self._saved_canvas_color)
+        self._saved_canvas_color = None
+        self.canvas.refresh()
 
     # ---- wiring ----
 
@@ -142,6 +176,8 @@ class AutoQadController(QObject):
         self.palette.show()
         self.command_bar.show()
 
+        self._enter_cad_mode()
+
         self.canvas.setMapTool(self.map_tool)
         self.command_bar.set_current_layer(self.variables.get("CLAYER"))
         self.command_bar.focus_input()
@@ -166,6 +202,7 @@ class AutoQadController(QObject):
 
         self.palette.hide()
         self.command_bar.hide()
+        self._exit_cad_mode()
 
         self._active = False
         self.activeChanged.emit(False)
@@ -226,7 +263,11 @@ class AutoQadController(QObject):
             point, int(self.variables.get("LUPREC")))
 
     def _on_variable_changed(self, name):
-        if name in ("LWDISPLAY", "LTSCALE", "*"):
+        if name in ("CANVASCOLOR", "*") and self._active:
+            # Changing the background flips how ACI 7 resolves, so every
+            # ByLayer colour has to be recomputed.
+            self._enter_cad_mode()
+        if name in ("LWDISPLAY", "LTSCALE", "CANVASCOLOR", "*"):
             self.document.restyle_all()
             self.document.refresh()
         if name in ("CLAYER", "*"):

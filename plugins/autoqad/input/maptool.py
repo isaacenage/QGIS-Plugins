@@ -137,10 +137,26 @@ class AutoQadMapTool(QgsMapTool):
     # ---- events ----
 
     def canvasMoveEvent(self, event):
-        """Record the move and return. All real work is deferred to the timer."""
+        """Record the move and return. Snapping is deferred to the timer.
+
+        The crosshair is the one thing moved **here**, at hardware rate, rather
+        than in the throttled pipeline. Driving it from the pipeline meant any
+        stall — a click that writes to the GeoPackage, a slow snap query — left
+        the crosshair frozen while the physical pointer moved on, so the cursor
+        visibly detached from its own crosshair. Four rubber-band updates are
+        cheap enough to afford on every raw event.
+
+        The pipeline still repositions it a frame later, which is what makes
+        the crosshair *jump to* an object snap the way AutoCAD's does.
+        """
         position = event.pos()
         map_point = self.toMapCoordinates(position)
-        self.pointer.on_move(position, (map_point.x(), map_point.y()))
+        raw = (map_point.x(), map_point.y())
+
+        if self.crosshair is not None:
+            self.crosshair.move_to(raw)
+
+        self.pointer.on_move(position, raw)
 
     def canvasPressEvent(self, event):
         if event.button() == Qt.MouseButton.RightButton:

@@ -135,7 +135,8 @@ class LayerManagerDialog(QDialog):
         colour_item.setFlags(colour_item.flags()
                              & ~Qt.ItemFlag.ItemIsEditable)
         colour_item.setIcon(
-            self._colour_icon(layer.hex_color(theme.background_is_dark())))
+            self._colour_icon(
+                layer.hex_color(self.variables.background_is_dark)))
         self.table.setItem(row, COL_COLOUR, colour_item)
 
         self.table.setCellWidget(
@@ -266,7 +267,7 @@ class LayerManagerDialog(QDialog):
         if layer is None:
             return
 
-        initial = QColor(layer.hex_color(theme.background_is_dark()))
+        initial = QColor(layer.hex_color(self.variables.background_is_dark))
         chosen = QColorDialog.getColor(initial, self, "Select layer colour")
         if not chosen.isValid():
             return

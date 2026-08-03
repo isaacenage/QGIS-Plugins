@@ -49,6 +49,7 @@ test-pure:
 	python test/test_engine.py
 	python test/test_document_guard.py
 	python test/test_flow_layout.py
+	python test/test_variables.py
 
 # Run the full suite (needs a sourced QGIS environment).
 test: compile

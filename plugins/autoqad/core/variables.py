@@ -119,22 +119,50 @@ DEFINITIONS = {v.name: v for v in (
     _a("APERTURE", "int", 10, "Object-snap target height, in pixels."),
     _a("PICKBOX", "int", 5, "Entity-selection pick box, in pixels."),
     _a("CURSORSIZE", "int", 5, "Crosshair size, as a percent of the screen."),
-    _a("CURSORCOLOR", "str", "#3c4650", "Crosshair colour."),
-    _a("PICKBOXCOLOR", "str", "#3c4650", "Pick box and aperture colour."),
+    _a("CURSORCOLOR", "str", "#ffffff", "Crosshair colour."),
+    _a("PICKBOXCOLOR", "str", "#ffffff", "Pick box and aperture colour."),
     _a("CROSSHAIR", "bool", True,
        "Draw the AutoCAD crosshair instead of the system pointer."),
+    # Model space is black in CAD mode, as it is in AutoCAD. This drives both
+    # the canvas colour and how ACI 7 resolves (white on dark, black on light).
+    _a("CANVASCOLOR", "str", "#000000", "Model space background colour."),
     _a("AUTOSNAPSIZE", "int", 10, "Snap marker size, in pixels."),
     _a("AUTOSNAPCOLOR", "str", "#f2c200", "Snap marker colour."),
-    _a("TRACKCOLOR", "str", "#7d8b99", "Tracking/alignment line colour."),
-    _a("RUBBERCOLOR", "str", "#2b7de9", "Rubber-band preview colour."),
-    _a("HIGHLIGHTCOLOR", "str", "#2b7de9", "Selection highlight colour."),
-    _a("GRIPCOLOR", "str", "#2b7de9", "Unselected grip colour."),
-    _a("GRIPHOT", "str", "#d13438", "Selected (hot) grip colour."),
+    _a("TRACKCOLOR", "str", "#9aa7b4", "Tracking/alignment line colour."),
+    _a("RUBBERCOLOR", "str", "#ffffff", "Rubber-band preview colour."),
+    _a("HIGHLIGHTCOLOR", "str", "#4da3ff", "Selection highlight colour."),
+    # Grip colours are AutoCAD's blue/red, lightened so they read against a
+    # black model space rather than sinking into it.
+    _a("GRIPCOLOR", "str", "#4da3ff", "Unselected grip colour."),
+    _a("GRIPHOT", "str", "#ff5555", "Selected (hot) grip colour."),
     _a("GRIPSIZE", "int", 7, "Grip box size, in pixels."),
     _a("MOVETHROTTLE", "int", 16, "Pointer pipeline interval, in ms."),
     _a("SNAPMARKERS", "bool", True, "Draw snap markers."),
     _a("CMDECHO", "bool", True, "Echo commands to the history pane."),
 )}
+
+
+def is_dark_colour(value):
+    """True when a ``#rrggbb`` string is dark enough to need light foregrounds.
+
+    Uses perceptual luminance (Rec. 601 weights) rather than a plain average,
+    so a saturated blue background is correctly read as dark while a yellow one
+    is not. Unparseable input is treated as dark, because CAD mode's default is
+    black and that is the safer guess.
+    """
+    text = str(value or "").strip().lstrip("#")
+    if len(text) == 3:
+        text = "".join(ch * 2 for ch in text)
+    if len(text) != 6:
+        return True
+    try:
+        red = int(text[0:2], 16)
+        green = int(text[2:4], 16)
+        blue = int(text[4:6], 16)
+    except ValueError:
+        return True
+    luminance = 0.299 * red + 0.587 * green + 0.114 * blue
+    return luminance < 128.0
 
 
 def _coerce(kind, value):
@@ -228,6 +256,16 @@ class VariableStore(QObject):
     @property
     def clockwise_angles(self):
         return int(self.get("ANGDIR")) == 1
+
+    @property
+    def background_is_dark(self):
+        """True when model space is dark, so ACI 7 must render white.
+
+        Derived from CANVASCOLOR rather than stored separately, so there is one
+        source of truth: change the background and every ByLayer colour that
+        depends on it follows.
+        """
+        return is_dark_colour(self.get("CANVASCOLOR"))
 
     # ---- persistence ----
 

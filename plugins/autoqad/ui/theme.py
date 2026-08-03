@@ -45,11 +45,9 @@ PALETTE = {
     "warn": "#b3541e",
 }
 
-#: Drawing-model colours. ``background`` decides how ACI 7 resolves.
-CANVAS = {
-    "background": "#ffffff",
-    "is_dark": False,
-}
+#: Model space colours live in the CANVASCOLOR system variable, not here — see
+#: ``VariableStore.background_is_dark``. Keeping one source of truth means
+#: changing the background updates every ByLayer colour that depends on it.
 
 #: The tool palette is **deliberately dark and fixed**, independent of both
 #: :data:`PALETTE` above and whatever theme QGIS is running. CAD tool palettes
@@ -109,11 +107,6 @@ QToolTip {{
     padding:5px 8px; font-size:11px;
 }}
 """.format(**TOOL_PALETTE)
-
-
-def background_is_dark():
-    """True when model space uses a dark background (ACI 7 draws white)."""
-    return bool(CANVAS["is_dark"])
 
 
 def dialog_qss():
