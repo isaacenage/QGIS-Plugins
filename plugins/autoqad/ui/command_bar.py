@@ -19,22 +19,10 @@ and the variable can never drift apart.
 from qgis.PyQt.QtCore import Qt, pyqtSignal
 from qgis.PyQt.QtWidgets import (
     QDockWidget, QFrame, QHBoxLayout, QLabel, QLineEdit, QSizePolicy,
-    QTextEdit, QToolButton, QVBoxLayout, QWidget,
+    QTextEdit, QVBoxLayout, QWidget,
 )
 
 from . import theme
-
-#: Status toggles: ``(label, variable, tooltip)``.
-TOGGLES = (
-    ("SNAP", "SNAPMODE", "Grid snap (F9)"),
-    ("GRID", "GRIDMODE", "Grid display (F7)"),
-    ("ORTHO", "ORTHOMODE", "Orthogonal constraint (F8)"),
-    ("POLAR", "POLARMODE", "Polar tracking (F10)"),
-    ("OSNAP", "OSNAPON", "Object snap (F3)"),
-    ("OTRACK", "OTRACK", "Object snap tracking (F11)"),
-    ("LWT", "LWDISPLAY", "Show lineweights"),
-    ("DYN", "DYNMODE", "Dynamic input (F12)"),
-)
 
 MAX_HISTORY_LINES = 500
 
@@ -80,8 +68,6 @@ class CommandBarDock(QDockWidget):
     submitted = pyqtSignal(str)
     #: The user pressed Escape.
     cancelled = pyqtSignal()
-    #: A status toggle was clicked; carries the variable name.
-    toggled = pyqtSignal(str)
 
     def __init__(self, variables, registry, parent=None):
         super().__init__("AutoQAD Command Line", parent)
@@ -91,12 +77,11 @@ class CommandBarDock(QDockWidget):
 
         self._history = []
         self._history_index = 0
-        self._toggle_buttons = {}
 
         self._build()
         theme.apply(self)
         self.variables.changed.connect(self._on_variable_changed)
-        self.refresh_toggles()
+        self.set_current_layer(self.variables.get("CLAYER"))
 
     # ---- construction ----
 
@@ -142,30 +127,24 @@ class CommandBarDock(QDockWidget):
         self.input.completeRequested.connect(self._complete)
 
     def _build_status_bar(self, parent):
+        """A readout strip: cursor coordinates and the current layer.
+
+        No mode toggles. Drafting modes are driven by their function keys
+        (F3/F8/F9/F10) and the DSETTINGS dialog, which is what a CAD user
+        reaches for — a row of on-screen buttons duplicates knowledge they
+        already have.
+        """
         bar = QFrame(parent)
         bar.setObjectName("aqStatusBar")
         layout = QHBoxLayout(bar)
-        layout.setContentsMargins(8, 4, 8, 4)
-        layout.setSpacing(4)
-
-        for label, variable, tooltip in TOGGLES:
-            button = QToolButton(bar)
-            button.setObjectName("aqStatusToggle")
-            button.setText(label)
-            button.setToolTip(tooltip)
-            button.setCheckable(True)
-            button.setCursor(Qt.CursorShape.PointingHandCursor)
-            button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-            button.clicked.connect(
-                lambda _checked=False, name=variable: self.toggled.emit(name))
-            layout.addWidget(button)
-            self._toggle_buttons[variable] = button
-
-        layout.addStretch(1)
+        layout.setContentsMargins(10, 4, 10, 4)
+        layout.setSpacing(12)
 
         self.coordinate_label = QLabel("", bar)
         self.coordinate_label.setProperty("role", "muted")
         layout.addWidget(self.coordinate_label)
+
+        layout.addStretch(1)
 
         self.layer_label = QLabel("", bar)
         self.layer_label.setProperty("role", "muted")
@@ -249,17 +228,8 @@ class CommandBarDock(QDockWidget):
     def focus_input(self):
         self.input.setFocus(Qt.FocusReason.OtherFocusReason)
 
-    # ---- toggles ----
-
-    def refresh_toggles(self):
-        for variable, button in self._toggle_buttons.items():
-            try:
-                button.setChecked(bool(self.variables.get(variable)))
-            except KeyError:
-                button.setEnabled(False)
+    # ---- variable feedback ----
 
     def _on_variable_changed(self, name):
-        if name == "*" or name in self._toggle_buttons:
-            self.refresh_toggles()
         if name in ("CLAYER", "*"):
             self.set_current_layer(self.variables.get("CLAYER"))

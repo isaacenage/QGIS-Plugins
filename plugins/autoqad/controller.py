@@ -85,7 +85,6 @@ class AutoQadController(QObject):
     def _wire(self):
         self.command_bar.submitted.connect(self._on_submitted)
         self.command_bar.cancelled.connect(self._on_cancelled)
-        self.command_bar.toggled.connect(self._on_toggle)
         self.palette.commandRequested.connect(self.run_command)
 
         self.runner.promptChanged.connect(self._on_prompt_changed)
@@ -225,9 +224,6 @@ class AutoQadController(QObject):
     def _on_point_changed(self, point):
         self.command_bar.set_coordinates(
             point, int(self.variables.get("LUPREC")))
-
-    def _on_toggle(self, variable):
-        self.variables.toggle(variable)
 
     def _on_variable_changed(self, name):
         if name in ("LWDISPLAY", "LTSCALE", "*"):

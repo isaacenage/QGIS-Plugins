@@ -292,14 +292,7 @@ QDockWidget::title {{
     padding:0 2px 0 10px;
 }}
 #aqStatusBar {{ background:{bg}; border-top:1px solid {border}; }}
-#aqStatusToggle {{
-    border:1px solid transparent; border-radius:6px; padding:3px 9px;
-    color:{muted}; font-size:11px; font-weight:600;
-}}
-#aqStatusToggle:hover {{ background:{brand_soft}; border-color:{border}; }}
-#aqStatusToggle:checked {{
-    background:{brand_soft}; border-color:{accent}; color:{accent};
-}}
+#aqStatusBar QLabel {{ color:{muted}; font-family:{mono_font}; font-size:11px; }}
 #aqSwatch {{ border:1px solid {border}; border-radius:4px; }}
 """.format(system_font=SYSTEM_FONT_STACK, mono_font=MONO_FONT_STACK, **PALETTE)
 
