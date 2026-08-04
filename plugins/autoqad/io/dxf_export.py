@@ -18,6 +18,7 @@ DXF layer name, and the CAD-truth fields (``aq_color``, ``aq_ltype``,
 
 import os
 
+from ..core.document import LINES, POINTS, POLYGONS
 from ..geom import build, construct
 from ..style import linetypes
 
@@ -156,7 +157,7 @@ def _common_attribs(feature):
 
 def _write_curves(modelspace, document):
     """Write curves, preserving true arcs and circles where they exist."""
-    table = document.table("aq_curves")
+    table = document.table(LINES)
     if table is None:
         return 0
 
@@ -239,7 +240,7 @@ def _fit_arc(points):
 
 
 def _write_points(modelspace, document):
-    table = document.table("aq_points")
+    table = document.table(POINTS)
     if table is None:
         return 0
 
@@ -273,7 +274,7 @@ def _write_points(modelspace, document):
 
 def _write_hatches(modelspace, document):
     """Write hatches as real DXF HATCH entities with their pattern intact."""
-    table = document.table("aq_polygons")
+    table = document.table(POLYGONS)
     if table is None:
         return 0
 

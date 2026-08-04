@@ -388,18 +388,19 @@ class TitlePlotterPhilippineLandTitles:
             self.first_start = False
             self.dlg = TitlePlotterPhilippineLandTitlesDialog(self.iface)
 
-        # show the dialog
+        # Show the dialog non-modally: the live lot preview draws on the main
+        # map canvas, so the user must stay free to pan/zoom the map (and use
+        # the rest of QGIS) while typing the technical description.
         self.dlg.show()
-        # Run the dialog event loop
-        result = self.dlg.exec()
-        # See if OK was pressed
-        if result:
-            # Do something useful here - delete the line containing pass and
-            # substitute with your code.
-            pass
+        self.dlg.raise_()
+        self.dlg.activateWindow()
 
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
+        # Closing the dialog also takes the live lot preview off the map
+        # canvas (see TitlePlotterPhilippineLandTitlesDialog.hideEvent).
+        if getattr(self, "dlg", None) is not None:
+            self.dlg.close()
         for action in self.actions:
             self.iface.removePluginMenu(self.menu, action)
             self.iface.removeToolBarIcon(action)

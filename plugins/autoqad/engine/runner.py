@@ -19,7 +19,7 @@ ends, so one Ctrl+Z undoes one CAD operation rather than one feature insert.
 from qgis.PyQt.QtCore import QObject, pyqtSignal
 
 from ..input import coords
-from .prompt import CANCEL, ENTER, Prompt
+from .prompt import CANCEL, ENTER, Prompt, SelectionPrompt
 
 # Runner states.
 IDLE = "idle"
@@ -39,11 +39,18 @@ class CommandRunner(QObject):
     rubberChanged = pyqtSignal(object)
     #: A line of output for the history pane.
     messaged = pyqtSignal(str)
+    #: A pending selection was handed to a command; whoever gathered it should
+    #: now let it go, or the next command would inherit stale picks.
+    selectionConsumed = pyqtSignal()
 
     def __init__(self, context, registry, parent=None):
         super().__init__(parent)
         self.context = context
         self.registry = registry
+        #: Callable returning the picks gathered so far, as
+        #: ``[(table_name, feature_id), ...]``. Set by whatever is doing the
+        #: picking — the map tool in the GUI, nothing at all when headless.
+        self.selection_provider = None
         self._command = None
         self._generator = None
         self._prompt = None
@@ -176,6 +183,15 @@ class CommandRunner(QObject):
         self._edit_open = True
 
     def _end_edit(self, commit=True):
+        """Close the command's undo macro, leaving the edit session open.
+
+        Writing the buffer to storage here is what used to happen, and it is
+        what made UNDO permanently report "Nothing to undo":
+        ``commitChanges`` clears the layer's undo stack, so every macro this
+        method had just closed was destroyed a line later. The buffer is
+        flushed at the points that actually mean "done" — the session ending,
+        the project being saved — through ``DrawingDocument.commit``.
+        """
         if not self._edit_open:
             return
         document = self.context.document
@@ -186,7 +202,6 @@ class CommandRunner(QObject):
                         table.endEditCommand()
                     else:
                         table.destroyEditCommand()
-                    table.commitChanges(stopEditing=False)
                 except (RuntimeError, AttributeError):
                     pass
         self._edit_open = False
@@ -260,7 +275,55 @@ class CommandRunner(QObject):
         """Answer a selection prompt with ``[(table, feature_id), ...]``."""
         if not self.is_running or not self.wants_selection:
             return False
-        return self._advance(list(selection))
+        advanced = self._advance(list(selection))
+        self.selectionConsumed.emit()
+        return advanced
+
+    # ---- selection sources ----
+
+    def pending_selection(self):
+        """The picks gathered so far by whoever is doing the picking."""
+        if self.selection_provider is None:
+            return []
+        try:
+            return list(self.selection_provider() or [])
+        except (RuntimeError, TypeError):
+            return []
+
+    def _every_entity(self):
+        """Every entity in the drawing — what the ``ALL`` keyword means."""
+        document = self.context.document
+        if document is None:
+            return []
+        try:
+            return list(document.all_entities())
+        except (AttributeError, RuntimeError):
+            return []
+
+    def _selection_from_text(self, raw):
+        """Interpret typed input at a Select-objects prompt.
+
+        Returns a selection list, or ``None`` when the text is not selection
+        input and should fall through to ordinary parsing.
+
+        A bare Enter commits whatever has been picked so far. That is the
+        AutoCAD flow — pick, pick, Enter — and reading it as the ENTER
+        sentinel instead is what silently aborted every selection command.
+
+        ``ALL`` goes through the prompt's own keyword matching, so its
+        abbreviations resolve here rather than falling through and reaching
+        the command as the literal string ``"ALL"``.
+        """
+        if not raw:
+            return self.pending_selection()
+        if raw.strip() == "*":
+            return self._every_entity()
+
+        prompt = self._prompt
+        keyword = prompt.match_keyword(raw) if prompt is not None else None
+        if keyword == SelectionPrompt.ALL:
+            return self._every_entity()
+        return None
 
     def supply_text(self, text):
         """Answer the current prompt with typed text.
@@ -279,6 +342,11 @@ class CommandRunner(QObject):
         prompt = self._prompt
         if prompt is None:
             return False
+
+        if self.wants_selection:
+            answer = self._selection_from_text(raw)
+            if answer is not None:
+                return self.supply_selection(answer)
 
         if not raw:
             if prompt.allow_enter:
@@ -329,8 +397,12 @@ class CommandRunner(QObject):
         if kind in ("string", "text"):
             return raw
 
-        if kind == "keyword":
-            return None      # keywords already handled above
+        if kind in ("keyword", "selection"):
+            # Keywords were matched above; a selection is answered by picking
+            # or by ALL, both handled before parsing ever gets here. Anything
+            # else is a typo, and saying so beats handing a command a string
+            # where it expects a list of picks.
+            return None
 
         return raw
 

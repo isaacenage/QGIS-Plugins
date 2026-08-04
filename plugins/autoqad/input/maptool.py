@@ -25,6 +25,12 @@ class AutoQadMapTool(QgsMapTool):
     pointMoved = pyqtSignal(object)
     #: Emitted when the tool is deactivated, so the UI can untick its button.
     deactivated = pyqtSignal()
+    #: A character was typed while the canvas held focus; carries the text so
+    #: the command line can absorb it. See :meth:`keyPressEvent`.
+    keyTyped = pyqtSignal(str)
+    #: The canvas was clicked. Answering a prompt with the mouse retires
+    #: anything half-typed, so the cursor command box closes on this.
+    canvasClicked = pyqtSignal()
 
     def __init__(self, canvas, runner, pointer, preview, variables, document,
                  crosshair=None, dyninput=None):
@@ -159,6 +165,8 @@ class AutoQadMapTool(QgsMapTool):
         self.pointer.on_move(position, raw)
 
     def canvasPressEvent(self, event):
+        self.canvasClicked.emit()
+
         if event.button() == Qt.MouseButton.RightButton:
             # Right-click ends the current input, as Enter does in AutoCAD.
             self.runner.supply_text("")
@@ -183,6 +191,12 @@ class AutoQadMapTool(QgsMapTool):
             self._sync_base_point()
             return
 
+        if self.runner.is_running:
+            # A command is waiting on something a click cannot answer — a
+            # typed pattern name, a keyword. Picking here would build a
+            # selection nobody asked for and hand it to the *next* command.
+            return
+
         # No command running: a click starts a selection for the next command.
         self._pick_entity(position, raw, accumulate=True)
 
@@ -190,6 +204,16 @@ class AutoQadMapTool(QgsMapTool):
         pass
 
     def keyPressEvent(self, event):
+        """Handle the CAD keys, and hand every other keystroke to the prompt.
+
+        The forwarding is the important half. Clicking the canvas gives it
+        keyboard focus, and a map tool that swallows characters means every
+        prompt wanting *typed* input — POLYGON's side count, TEXT's contents,
+        HATCH's pattern, a scale factor, a keyword like ``D`` for Diameter —
+        looks frozen: the prompt is displayed, the user types, and nothing
+        happens. In AutoCAD typing anywhere goes to the command line, so that
+        is what these characters do.
+        """
         key = event.key()
         if key == Qt.Key.Key_Escape:
             self.runner.escape()
@@ -199,6 +223,8 @@ class AutoQadMapTool(QgsMapTool):
             event.accept()
         elif key in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
             self.runner.supply_text("")
+            event.accept()
+        elif self._forward_to_command_line(event):
             event.accept()
         elif key == Qt.Key.Key_F8:
             self.variables.toggle("ORTHOMODE")
@@ -214,6 +240,45 @@ class AutoQadMapTool(QgsMapTool):
             event.accept()
         else:
             super().keyPressEvent(event)
+
+    #: Keys that belong to QGIS, not to the AutoQAD prompt, whatever text they
+    #: happen to carry. Delete removes selected features; Backspace is handled
+    #: separately so it edits the typed line rather than the drawing.
+    _RESERVED_KEYS = (Qt.Key.Key_Delete, Qt.Key.Key_Tab, Qt.Key.Key_Backtab)
+
+    def _forward_to_command_line(self, event):
+        """Send a typed character to the command line. True if it was taken.
+
+        Modifier chords are left alone — Ctrl+Z, Ctrl+S and friends have to
+        keep reaching QGIS — and so does anything that carries no text, which
+        is every arrow, function and navigation key.
+
+        Capturing plain letters is what makes ``L`` start a line, and it is
+        also what takes QGIS's own single-letter shortcuts out of play for as
+        long as the session is on. That is AutoCAD's bargain, so it is the
+        default; ``CMDKEYCAPTURE`` is the way out for anyone who wants their
+        shortcuts back and is happy to type in the dock.
+        """
+        if not self.variables.get("CMDKEYCAPTURE"):
+            return False
+        if event.key() in self._RESERVED_KEYS:
+            return False
+
+        modifiers = event.modifiers()
+        blocked = (Qt.KeyboardModifier.ControlModifier
+                   | Qt.KeyboardModifier.AltModifier
+                   | Qt.KeyboardModifier.MetaModifier)
+        if modifiers & blocked:
+            return False
+
+        text = event.text()
+        if not text:
+            return False
+        if text != "\b" and not text.isprintable():
+            return False
+
+        self.keyTyped.emit(text)
+        return True
 
     # ---- prompt synchronisation ----
 

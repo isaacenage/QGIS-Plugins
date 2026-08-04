@@ -147,6 +147,10 @@ ICONS = {
     "export": _stroke('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>'
                       '<polyline points="7 10 12 15 17 10"/>'
                       '<line x1="12" y1="15" x2="12" y2="3"/>'),
+    "plot": _stroke('<polyline points="7 9 7 3 17 3 17 9"/>'
+                    '<path d="M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 '
+                    '0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/>'
+                    '<rect x="7" y="14" width="10" height="7"/>'),
     "help": _stroke('<circle cx="12" cy="12" r="9"/>'
                     '<path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 '
                     '1.7v.5"/>'

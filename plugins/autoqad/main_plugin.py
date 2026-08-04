@@ -184,6 +184,45 @@ class AutoQadPlugin:
         from .io import dxf_export
         return dxf_export.export(self._ensure_session(False).document, path)
 
+    def plot(self, path=None, **options):
+        """Plot the drawing. Returns ``(ok, message)``.
+
+        Every option defaults to the matching PLOT* system variable, so
+        ``plot("site.pdf")`` is a complete call. Keywords mirror
+        :class:`~.io.plot.PlotSettings`: ``sheet``, ``landscape``,
+        ``margin_mm``, ``area``, ``window``, ``scale`` (0 = fit to paper),
+        ``style_mode`` (``normal``/``monochrome``/``grayscale``),
+        ``lineweights``, ``minimum_width_mm``, ``target`` and ``dpi``.
+        """
+        from .io import plot as plot_io
+
+        controller = self._ensure_session(False)
+        target = options.pop("target", None)
+        if target is None:
+            target = plot_io.TARGET_PDF if path else plot_io.TARGET_LAYOUT
+
+        settings = plot_io.PlotSettings.from_variables(
+            controller.variables, target=target, path=path or "")
+        if options:
+            settings = settings.replace(**options)
+
+        controller.document.commit()
+        return plot_io.plot(controller.document, settings,
+                            canvas=controller.canvas, iface=self.iface)
+
+    def register_plot_theme(self):
+        """Publish the plot style as a QGIS map theme. Returns True on success.
+
+        Lets a scripted workflow hand off to QGIS's own layout designer (or
+        atlas) with the drawing already rendering black on white.
+        """
+        from .style import plot_render, plotstyle
+
+        controller = self._ensure_session(False)
+        return plot_render.register_plot_theme(
+            controller.document,
+            plotstyle.PlotStyle.from_variables(controller.variables))
+
     def api_reference(self):
         """Return the scripting API reference (spec schema, commands, types)."""
         from .scripting import api_reference

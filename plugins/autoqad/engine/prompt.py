@@ -45,6 +45,12 @@ class Prompt(object):
     #: What the runner should try to parse typed text as.
     kind = "text"
 
+    #: Whether a space belongs *in* the answer. At almost every prompt a
+    #: space submits, as it does at AutoCAD's command line — but the one
+    #: asking for the contents of a TEXT entity obviously cannot work that
+    #: way, so prompts declare it rather than the widget guessing.
+    literal_space = False
+
     def __init__(self, message, options=None, default=None,
                  allow_enter=True, rubber=None, base_point=None):
         self.message = message
@@ -154,6 +160,7 @@ class StringPrompt(Prompt):
     """Ask for free text (TEXT contents, layer names …)."""
 
     kind = "string"
+    literal_space = True
 
 
 class KeywordPrompt(Prompt):
@@ -170,12 +177,22 @@ class SelectionPrompt(Prompt):
 
     Answered with a list of ``(table_name, feature_id)`` pairs. *single* stops
     at the first pick instead of collecting until Enter.
+
+    A multi-pick prompt advertises ``ALL`` by default, because selecting the
+    whole drawing is how a CAD user erases or transforms it wholesale and there
+    is otherwise no way to say it. The runner intercepts the word before
+    keyword matching, so it never reaches the command as a literal string.
     """
 
     kind = "selection"
 
+    #: The keyword the runner expands into "every entity in the drawing".
+    ALL = "ALL"
+
     def __init__(self, message="Select objects", single=False,
                  filter_types=None, **kwargs):
+        if not single and not kwargs.get("options"):
+            kwargs["options"] = [self.ALL]
         super().__init__(message, **kwargs)
         self.single = single
         #: Restrict picking to these entity types, or ``None`` for any.

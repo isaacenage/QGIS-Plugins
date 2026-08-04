@@ -34,7 +34,9 @@ from qgis.core import (
     QgsAnnotationLayer,
     QgsAnnotationPointTextItem
 )
-from qgis.gui import QgsMapCanvas, QgsProjectionSelectionDialog
+from qgis.gui import QgsProjectionSelectionDialog
+
+from .map_live_preview import LotMapPreview
 
 # Attempt to import TiePointSelectorDialog, handle potential ImportError later if the file is missing
 try:
@@ -196,14 +198,15 @@ def generate_coordinates(tie_easting, tie_northing, bearing_rows):
     return coords
 
 
-def calculate_misclosure(tie_easting, tie_northing, final_easting, final_northing):
-    """Calculate the misclosure (distance between starting and ending points).
+def calculate_misclosure(start_easting, start_northing, final_easting, final_northing):
+    """Calculate the misclosure (linear error of closure).
 
-    In a perfectly closed traverse, the misclosure would be 0.
-    This is the linear error of closure.
+    Distance between the point where the traverse should close (the first
+    corner) and where it actually ends after the closing line. In a
+    perfectly closed traverse, the misclosure would be 0.
     """
-    delta_e = final_easting - tie_easting
-    delta_n = final_northing - tie_northing
+    delta_e = final_easting - start_easting
+    delta_n = final_northing - start_northing
     return math.sqrt(delta_e**2 + delta_n**2)
 
 
@@ -672,8 +675,20 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
         # Apply the shared Title Plotter theme (neutral chrome + teal accent)
         theme.apply(self)
 
-        # Set minimum size for proper layout (wider for two-column layout)
-        self.setMinimumSize(950, 900)
+        # Minimum size for the single-column layout (the lot preview renders
+        # live on the main map canvas, not inside the dialog), capped to the
+        # screen's available space (menu bar / taskbar / macOS Dock excluded)
+        # so the dialog is never forced taller or wider than the visible
+        # desktop.
+        screen = self.screen() or QApplication.primaryScreen()
+        if screen is not None:
+            available = screen.availableGeometry()
+            min_w = min(640, available.width() - 40)
+            min_h = min(680, available.height() - 40)
+        else:
+            min_w, min_h = 640, 680
+        self.setMinimumSize(min_w, min_h)
+        self.resize(min_w, min_h)
 
         # Set modern style for the WKT preview label
         self.labelWKT.setStyleSheet("""
@@ -815,61 +830,18 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
             }
         """)
 
-        # Create a styled container frame for the preview canvas section
-        preview_container = QFrame()
-        preview_container.setFrameShape(QFrame.Shape.StyledPanel)
-        preview_container.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        preview_container.setStyleSheet("""
-            QFrame {
-                background-color: #ffffff;
-                border: 1px solid #e2e6ec;
-                border-radius: 12px;
-            }
-        """)
-        preview_layout = QVBoxLayout(preview_container)
-        preview_layout.setContentsMargins(12, 12, 12, 12)
-        preview_layout.setSpacing(10)
+        # Live lot preview: drawn directly on the main QGIS map canvas
+        # (rubber bands + a tie-point marker + labels) instead of an embedded
+        # preview canvas - keeps the dialog compact and shows the lot in its
+        # real map context while the user types.
+        self.map_preview = LotMapPreview(self.iface.mapCanvas())
+        self._lot_on_map = False  # True once the live preview has geometry
 
-        # Header label for the preview section
-        preview_header = QLabel("Lot Preview")
-        preview_header.setStyleSheet("""
-            QLabel {
-                color: #252b33;
-                font-size: 8pt;
-                font-weight: bold;
-                background-color: transparent;
-                border: none;
-                padding: 0px;
-            }
-        """)
-        preview_layout.addWidget(preview_header)
-
-        # Initialize QgsMapCanvas for the visual preview with modern styling
-        self.previewCanvas = QgsMapCanvas(preview_container)
-        self.previewCanvas.setCanvasColor(QColor("#ffffff"))
-        self.previewCanvas.enableAntiAliasing(True)
-        self.previewCanvas.setWheelFactor(1.2)
-        self.previewCanvas.setEnabled(True)
-        self.previewCanvas.setMinimumHeight(150)
-        self.previewCanvas.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        self.previewCanvas.setStyleSheet("""
-            QgsMapCanvas {
-                border: 1px solid #e2e6ec;
-                border-radius: 8px;
-            }
-        """)
-        preview_layout.addWidget(self.previewCanvas, 1)  # stretch factor 1 to expand
-
-        # Create a horizontal layout for the zoom and new buttons (inside the container)
-        button_layout = QHBoxLayout()
-        button_layout.setContentsMargins(0, 0, 0, 0)
-        button_layout.setSpacing(8)
-        button_layout.addStretch()
-
-        # Modern styled zoom button
-        self.zoomToLayerBtn = QPushButton("Zoom to Fit")
+        # Zoom button: frames the main map canvas on the live lot preview
+        self.zoomToLayerBtn = QPushButton("Zoom to Lot")
         self.zoomToLayerBtn.setFixedHeight(26)
         self.zoomToLayerBtn.setMinimumWidth(100)
+        self.zoomToLayerBtn.setToolTip("Zoom the map to the lot drawn by the live preview")
         self.zoomToLayerBtn.setStyleSheet("""
             QPushButton {
                 background-color: #14575b;
@@ -887,8 +859,7 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
                 background-color: #114a4e;
             }
         """)
-        self.zoomToLayerBtn.clicked.connect(self.zoom_preview_to_layer)
-        button_layout.addWidget(self.zoomToLayerBtn)
+        self.zoomToLayerBtn.clicked.connect(self.zoom_map_to_lot)
 
         # Modern styled New button
         self.newButton = QPushButton("New Plot")
@@ -912,10 +883,6 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
             }
         """)
         self.newButton.clicked.connect(self.reset_plotter)
-        button_layout.addWidget(self.newButton)
-
-        # Add the button layout to the preview layout (inside the container)
-        preview_layout.addLayout(button_layout)
 
         # --- Create Info Panel for Area and Misclosure ---
         info_panel = QFrame()
@@ -1107,11 +1074,8 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
         self.verticalLayout.setSpacing(12)
         self.verticalLayout.setContentsMargins(16, 16, 16, 16)
 
-        # --- Create Two-Column Layout for Technical Description and Lot Preview ---
-        # Create a horizontal layout to hold both columns side by side
-        main_content_layout = QHBoxLayout()
-        main_content_layout.setSpacing(12)
-
+        # --- Create the Technical Description column (single column: the lot
+        # preview renders live on the main map canvas, not in the dialog) ---
         # Create a styled container frame for the Technical Description section
         tech_desc_container = QFrame()
         tech_desc_container.setFrameShape(QFrame.Shape.StyledPanel)
@@ -1127,7 +1091,7 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
         tech_desc_layout.setContentsMargins(12, 12, 12, 12)
         tech_desc_layout.setSpacing(10)
 
-        # Update the Technical Description label style to match Lot Preview header
+        # Style the Technical Description header label
         technicalDescriptionLabel.setStyleSheet("""
             QLabel {
                 color: #252b33;
@@ -1151,15 +1115,21 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
             }
         """)
 
-        # Add label and scroll area to the container
-        tech_desc_layout.addWidget(technicalDescriptionLabel)
+        # Header row: the section label plus the preview actions that used to
+        # live under the embedded preview canvas
+        tech_desc_header = QHBoxLayout()
+        tech_desc_header.setContentsMargins(0, 0, 0, 0)
+        tech_desc_header.setSpacing(8)
+        tech_desc_header.addWidget(technicalDescriptionLabel)
+        tech_desc_header.addStretch()
+        tech_desc_header.addWidget(self.zoomToLayerBtn)
+        tech_desc_header.addWidget(self.newButton)
+
+        # Add header row and scroll area to the container
+        tech_desc_layout.addLayout(tech_desc_header)
         tech_desc_layout.addWidget(scrollArea_bearings, 1)  # stretch factor 1 to expand
 
-        # Add columns to horizontal layout with stretch factors (3:2 ratio for wider left column)
-        main_content_layout.addWidget(tech_desc_container, 3)
-        main_content_layout.addWidget(preview_container, 2)
-
-        # --- End Two-Column Layout ---
+        # --- End Technical Description column ---
 
         # --- Create Tab Widget ---
         # Tab styling is inherited from the shared theme (accent underline on the
@@ -1175,7 +1145,7 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
         # Add widgets/layouts to the Plot tab layout
         plot_tab_layout.addLayout(horizontalLayout_tiepoints)
         plot_tab_layout.addWidget(self.ocrButton)
-        plot_tab_layout.addLayout(main_content_layout, 1)  # stretch factor 1 to expand
+        plot_tab_layout.addWidget(tech_desc_container, 1)  # stretch factor 1 to expand
 
         # --- Create Property Information Panel ---
         property_info_panel = QFrame()
@@ -1499,13 +1469,22 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
         # Store the last generated WKT
         self.last_wkt = None
 
-        # Initialize preview layers (for the QgsMapCanvas)
+        # Initialize preview layers. They are no longer shown in the dialog
+        # (the live preview draws on the main map canvas via map_preview) but
+        # the PDF report still renders them, and check_print_report_enabled
+        # uses preview_layer as the "valid lot" signal.
         self.preview_layer = None
         self.preview_points_layer = None
         self.preview_annotation_layer = None
 
         # Connect signals for Print Report button state
         self._connect_print_report_signals()
+
+        # Manual tie point edits must regenerate the WKT/preview immediately,
+        # like the bearing-row inputs do (plot_on_map plots the stored
+        # last_wkt, which would otherwise stay stale until a row is touched).
+        self.tiePointNorthingInput.textChanged.connect(self.generate_wkt)
+        self.tiePointEastingInput.textChanged.connect(self.generate_wkt)
 
         # Remove the old WKT output widget and Generate WKT button
         # These were removed in a previous step, keeping this check for safety
@@ -1712,9 +1691,10 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
             "• 1 - 2: From Corner 1 to Corner 2\n"
             "• 2 - 3: From Corner 2 to Corner 3\n"
             "• ... and so on until the last line returns to Corner 1\n\n"
-            "PREVIEW:\n"
-            "As you enter data, the \"Lot Preview\" panel shows a real-time visualization of your polygon. "
-            "The Area and Misclosure values update automatically.\n\n"
+            "LIVE MAP PREVIEW:\n"
+            "As you enter data, the lot is drawn in real time directly on the QGIS map canvas - boundary "
+            "lines, corner vertices and corner labels. Click \"Zoom to Lot\" any time to frame it on the "
+            "map. The Area and Misclosure values update automatically.\n\n"
             "MISCLOSURE:\n"
             "Misclosure indicates how accurately the polygon closes. A value close to 0 means the boundary "
             "lines form a proper closed loop. Higher values may indicate input errors or data from the title."
@@ -1739,7 +1719,7 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
 
             "PLOTTING YOUR LOT:\n"
             "1. Ensure you have entered at least 3 bearing lines (for a valid polygon)\n"
-            "2. Verify the preview looks correct in the Lot Preview panel\n"
+            "2. Verify the live preview drawn on the map looks correct\n"
             "3. Click \"Plot on Map\"\n"
             "4. A new layer called \"Title Plot Preview\" will appear on your map\n"
             "5. The map will automatically zoom to your plotted lot\n\n"
@@ -2176,7 +2156,7 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
 
         has_tech_desc = valid_bearing_rows >= 3
 
-        # Check if Lot Preview has data (preview_layer exists and is valid)
+        # Check if a valid lot has been drawn (preview_layer exists and is valid)
         has_preview = self.preview_layer is not None and self.preview_layer.isValid()
 
         # Check Northing and Easting
@@ -2217,7 +2197,7 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
             if not has_tech_desc:
                 missing.append("Technical description (minimum 3 lines)")
             if not has_preview:
-                missing.append("Valid lot preview")
+                missing.append("Valid lot shape (at least 3 corners)")
             if not has_northing:
                 missing.append("Northing")
             if not has_easting:
@@ -2409,7 +2389,8 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
         return data
 
     def draw_preview(self, coords, tie_point_coords=None):
-        """Draw the polygon preview on the QgsMapCanvas with vertices and labels."""
+        """Draw the lot preview live on the main map canvas, and rebuild the
+        hidden memory layers the PDF report renders."""
         if not coords or len(coords) < 2:
             return
 
@@ -2528,25 +2509,39 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
                     text_item.setFormat(text_format)
                     self.preview_annotation_layer.addItem(text_item)
 
-                # Set all layers to canvas (polygon at bottom, points middle, annotations on top)
-                # Note: In setLayers(), first layer renders on TOP, so reverse order for correct z-order
-                self.previewCanvas.setLayers(
-                    [self.preview_annotation_layer, self.preview_points_layer,
-                     self.preview_layer])
             else:
-                # Points layer failed, just use polygon layer
+                # Points layer failed; the report falls back to the polygon layer
                 self.preview_points_layer = None
                 self.preview_annotation_layer = None
-                self.previewCanvas.setLayers([self.preview_layer])
         except Exception as e:
-            # If points/annotation layer fails, fall back to just polygon layer
+            # If points/annotation layer fails, fall back to just the polygon layer
             print(f"Points/annotation layer error: {e}")
             self.preview_points_layer = None
             self.preview_annotation_layer = None
-            self.previewCanvas.setLayers([self.preview_layer])
 
-        self.zoom_preview_to_layer()
-        self.previewCanvas.refresh()
+        # Draw the live preview on the main map canvas and keep the lot in
+        # view without hijacking navigation (see _follow_lot_on_map).
+        self.map_preview.update(coords, tie_point=tie_point_coords)
+        self._follow_lot_on_map()
+
+    def _follow_lot_on_map(self):
+        """Keep the live preview visible: jump only on the first draw or when
+        the lot is completely off-screen, so manual panning/zooming of the
+        map is never fought over while the user types."""
+        extent = self.map_preview.extent()
+        if extent is None:
+            self._lot_on_map = False
+            return
+        canvas = self.iface.mapCanvas()
+        first_draw = not self._lot_on_map
+        self._lot_on_map = True
+        # A geographic canvas (fresh WGS84 project) cannot sensibly frame
+        # projected northing/easting metre coordinates; plot_on_map prompts
+        # for a proper CRS when plotting, so never auto-navigate there.
+        if canvas.mapSettings().destinationCrs().isGeographic():
+            return
+        if first_draw or not canvas.extent().intersects(extent):
+            self.map_preview.zoom_to()
 
     def generate_wkt(self):
         """Generate WKT using Excel's coordinate calculation method."""
@@ -2607,17 +2602,14 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
             if len(coords) < 3:
                 self.labelWKT.setText("Insufficient points for a polygon (minimum 3)")
                 self._clear_info_panel()
-                # Clear the preview layers as it's not a valid polygon
-                if self.preview_layer and self.preview_layer.isValid():
-                    QgsProject.instance().removeMapLayer(self.preview_layer)
-                    self.preview_layer = None
-                if self.preview_points_layer and self.preview_points_layer.isValid():
-                    QgsProject.instance().removeMapLayer(self.preview_points_layer)
-                    self.preview_points_layer = None
-                if self.preview_annotation_layer:
-                    self.preview_annotation_layer = None
-                self.previewCanvas.setLayers([])
-                self.previewCanvas.refresh()
+                # Clear the report layers and the live map preview as it's
+                # not a valid polygon (the layers were never added to the
+                # project, so dropping the references is enough)
+                self.preview_layer = None
+                self.preview_points_layer = None
+                self.preview_annotation_layer = None
+                self.map_preview.clear()
+                self._lot_on_map = False
                 self.check_print_report_enabled()
                 return
 
@@ -2643,8 +2635,11 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
             # Calculate and display variance (Title Area - Actual Area)
             self._update_variance_display(area)
 
-            # Calculate and display misclosure
-            misclosure = calculate_misclosure(tie_e, tie_n, final_e, final_n)
+            # Calculate and display misclosure. The traverse runs
+            # TP -> corner 1 -> ... -> corner n -> corner 1, so it must close
+            # back onto the first corner (coords[0]), not the tie point.
+            first_e, first_n = coords[0]
+            misclosure = calculate_misclosure(first_e, first_n, final_e, final_n)
             self._update_misclosure_display(misclosure)
 
             # Update Print Report button state
@@ -2969,65 +2964,9 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
             self.wktOutput.setPlainText(f"An unexpected error occurred during coordinate calculation: {e}")
             return []
 
-    def zoom_preview_to_layer(self):
-        """Zoom the preview canvas to fit the entire polygon with padding."""
-        if self.preview_layer and self.preview_layer.isValid():
-            # Get the layer extent
-            extent = self.preview_layer.extent()
-
-            if extent.isEmpty():
-                return
-
-            # Get canvas dimensions
-            canvas_width = self.previewCanvas.width()
-            canvas_height = self.previewCanvas.height()
-
-            if canvas_width <= 0 or canvas_height <= 0:
-                # Fallback if canvas dimensions are not available yet
-                self.previewCanvas.setExtent(extent)
-                self.previewCanvas.refresh()
-                return
-
-            # Calculate the aspect ratios
-            extent_width = extent.width()
-            extent_height = extent.height()
-
-            # Handle edge cases where extent has zero width or height (line or point)
-            if extent_width <= 0:
-                extent_width = extent_height if extent_height > 0 else 1
-            if extent_height <= 0:
-                extent_height = extent_width if extent_width > 0 else 1
-
-            canvas_aspect = canvas_width / canvas_height
-            extent_aspect = extent_width / extent_height
-
-            # Add padding (15% on each side)
-            padding_factor = 0.15
-
-            # Calculate the new extent to fit the polygon while maintaining aspect ratio
-            if extent_aspect > canvas_aspect:
-                # Extent is wider than canvas - fit width, expand height
-                new_width = extent_width * (1 + 2 * padding_factor)
-                new_height = new_width / canvas_aspect
-            else:
-                # Extent is taller than canvas - fit height, expand width
-                new_height = extent_height * (1 + 2 * padding_factor)
-                new_width = new_height * canvas_aspect
-
-            # Calculate the center of the extent
-            center_x = extent.center().x()
-            center_y = extent.center().y()
-
-            # Create new extent centered on the polygon
-            new_extent = QgsRectangle(
-                center_x - new_width / 2,
-                center_y - new_height / 2,
-                center_x + new_width / 2,
-                center_y + new_height / 2
-            )
-
-            self.previewCanvas.setExtent(new_extent)
-            self.previewCanvas.refresh()
+    def zoom_map_to_lot(self):
+        """Zoom the main map canvas to the live lot preview."""
+        self.map_preview.zoom_to()
 
     PLOT_LAYER_NAMES = ("Title Plot Preview", "Title Plot Vertices", "Title Plot Lines")
 
@@ -3271,6 +3210,23 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
     def resizeEvent(self, event):
         """Handles resize event for the dialog."""
         super().resizeEvent(event)
+
+    def hideEvent(self, event):
+        """Take the live preview off the map whenever the dialog goes away
+        (close button, Esc/reject or a programmatic hide). Spontaneous hides
+        (e.g. minimizing) keep it, so the user can study the map."""
+        if not event.spontaneous():
+            self.map_preview.clear()
+            self._lot_on_map = False
+        super().hideEvent(event)
+
+    def showEvent(self, event):
+        """Rebuild the live map preview when the dialog is reopened while it
+        still holds a plot (the preview is cleared on close)."""
+        super().showEvent(event)
+        if (self.tiePointNorthingInput.text().strip()
+                and self.tiePointEastingInput.text().strip()):
+            QTimer.singleShot(0, self.generate_wkt)
 
     def print_report(self):
         """Export a PDF technical report with landscape 2-column Survey Plan layout."""
@@ -3609,9 +3565,6 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
                                 text_format.setBuffer(buffer_settings)
                             item.setFormat(text_format)
 
-                # Refresh the canvas to show original sizes
-                self.previewCanvas.refresh()
-
             # === RIGHT COLUMN: PROPERTY INFORMATION ===
             # Draw solid black border around right column
             right_col_rect = QRectF(right_x, content_start_y, right_col_width, content_inner_height)
@@ -3937,19 +3890,15 @@ class TitlePlotterPhilippineLandTitlesDialog(QDialog, FORM_CLASS):
         self.surveyNumberInput.setText("")
         self.titleAreaInput.setText("")
 
-        # Clear WKT and preview
+        # Clear WKT, the report layers and the live map preview (the layers
+        # were never added to the project, so dropping the references is enough)
         self.labelWKT.setText("")
         self.last_wkt = None
-        if self.preview_layer and self.preview_layer.isValid():
-            QgsProject.instance().removeMapLayer(self.preview_layer)
-            self.preview_layer = None
-        if self.preview_points_layer and self.preview_points_layer.isValid():
-            QgsProject.instance().removeMapLayer(self.preview_points_layer)
-            self.preview_points_layer = None
-        if self.preview_annotation_layer:
-            self.preview_annotation_layer = None
-        self.previewCanvas.setLayers([])
-        self.previewCanvas.refresh()
+        self.preview_layer = None
+        self.preview_points_layer = None
+        self.preview_annotation_layer = None
+        self.map_preview.clear()
+        self._lot_on_map = False
 
         # Clear area and misclosure info panel
         self._clear_info_panel()

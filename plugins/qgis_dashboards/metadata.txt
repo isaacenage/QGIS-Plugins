@@ -7,12 +7,12 @@
 name=QGIS Dashboard
 qgisMinimumVersion=3.22
 qgisMaximumVersion=4.99
-description=Build ArcGIS-Dashboards-style interactive dashboards from your QGIS project layers — indicators, charts, lists, a live map element, and cross-filtering selectors all wired together through a signal bus. By Isaac Enage (byZenterra).
+description=Build ArcGIS-Dashboards-style interactive dashboards from your QGIS project layers — indicators, charts, lists, a live map element, and cross-filtering selectors all wired together through a signal bus.
 version=0.2
 author=Isaac Enage
 email=isaacenagework@gmail.com
 
-about=QGIS Dashboard by Isaac Enage is an interactive dashboard builder for QGIS. Add data-driven elements (indicator, serial/bar chart, pie/donut chart, list) bound to vector layers via the QGIS expression engine, plus a live map element and a category selector that cross-filters every other element. Layout and configuration persist inside the .qgz project file. Developed and maintained by Isaac Enage of byZenterra. Guides, the dashboard gallery, and more QGIS plugins by Isaac Enage are at https://qgis.byzenterra.org/qdashboards
+about=QGIS Dashboard is an interactive dashboard builder for QGIS. Add data-driven elements (indicator, serial/bar chart, pie/donut chart, list) bound to vector layers via the QGIS expression engine, plus a live map element and a category selector that cross-filters every other element. Layout and configuration persist inside the .qgz project file. Guides, the dashboard gallery, and more QGIS plugins are at https://qgis.byzenterra.org/qdashboards
 
 tracker=https://github.com/isaacenage/QGIS-Plugins/issues
 repository=https://github.com/isaacenage/QGIS-Plugins

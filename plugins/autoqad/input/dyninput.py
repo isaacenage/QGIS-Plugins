@@ -67,6 +67,9 @@ class DynamicInput(object):
         self.canvas = canvas
         self.variables = variables
         self._visible = False
+        #: Vertical room reserved above the readout, so the cursor command box
+        #: and this stack share the same corner instead of overlapping.
+        self._reserved = 0
 
         self._primary = self._label()
         self._secondary = self._label()
@@ -91,6 +94,10 @@ class DynamicInput(object):
     def hide(self):
         for label in (self._primary, self._secondary, self._prompt):
             label.hide()
+
+    def set_reserved_height(self, pixels):
+        """Leave *pixels* of room above the readout for the command box."""
+        self._reserved = max(0, int(pixels))
 
     # ---- update ----
 
@@ -178,10 +185,10 @@ class DynamicInput(object):
         """Stack the visible boxes below-right of the cursor, kept on-canvas."""
         try:
             x = int(screen_pos.x()) + OFFSET_X
-            y = int(screen_pos.y()) + OFFSET_Y
+            y = int(screen_pos.y()) + OFFSET_Y + self._reserved
         except AttributeError:
             x = int(screen_pos[0]) + OFFSET_X
-            y = int(screen_pos[1]) + OFFSET_Y
+            y = int(screen_pos[1]) + OFFSET_Y + self._reserved
 
         visible = [lbl for lbl in (self._primary, self._secondary,
                                    self._prompt) if lbl.isVisible()]

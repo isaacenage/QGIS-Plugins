@@ -157,10 +157,19 @@ class CommandBarDock(QDockWidget):
     def _on_submit(self):
         text = self.input.text()
         self.input.clear()
-        if text.strip():
+        self.remember(text)
+        self.submitted.emit(text)
+
+    def remember(self, text):
+        """Record *text* in the recallable history.
+
+        Public because a line entered in the cursor box has to land in the
+        same history — pressing Up should walk everything typed this session,
+        not just what was typed down here.
+        """
+        if text and text.strip():
             self._history.append(text)
             self._history_index = len(self._history)
-        self.submitted.emit(text)
 
     def _on_escape(self):
         self.input.clear()
@@ -227,6 +236,28 @@ class CommandBarDock(QDockWidget):
 
     def focus_input(self):
         self.input.setFocus(Qt.FocusReason.OtherFocusReason)
+
+    def type_text(self, text):
+        """Absorb a character typed while the canvas had focus.
+
+        The command line takes focus as it does so, so the *rest* of the word
+        arrives here directly — the user types ``ALL`` or ``6`` or a pattern
+        name without ever noticing that the first keystroke landed somewhere
+        else. This is the behaviour that makes every typed prompt reachable
+        while drawing, which is most of them.
+        """
+        if not text:
+            return
+        self.input.setFocus(Qt.FocusReason.OtherFocusReason)
+
+        if text == "\b":
+            self.input.backspace()
+            return
+        if text == " " and not self.input.text():
+            # A leading space submits, exactly as it does when typed here.
+            self._on_submit()
+            return
+        self.input.insert(text)
 
     # ---- variable feedback ----
 

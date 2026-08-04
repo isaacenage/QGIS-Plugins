@@ -5,7 +5,7 @@ A CAD drawing needs mixed geometry on a single named layer; QGIS layers are
 single geometry type. AutoQAD resolves that by making the CAD layer an
 **attribute** rather than a QGIS layer, and splitting only by geometry:
 
-``aq_curves``   compound curves — lines, polylines, arcs, circles, rectangles
+``aq_lines``    linework — lines, polylines, arcs, circles, rectangles
 ``aq_points``   points — nodes, block and text insertion points
 ``aq_polygons`` polygons — hatches and solid fills
 
@@ -13,8 +13,13 @@ Three QGIS layers regardless of how many CAD layers a drawing carries. That is
 what keeps the snapping locator and the spatial index small, and it maps
 one-to-one onto DXF, where ``aq_layer`` simply becomes the DXF layer name.
 
-Curves are stored as ``CompoundCurve`` so true arcs survive a round trip
-instead of being segmentised on save.
+Linework is stored as ``CompoundCurve`` so true arcs survive a round trip
+instead of being segmentised on save — the geometry type is curved, but the
+table is the drawing's *lines*, which is what the name says.
+
+Drawings written before the rename carry an ``aq_curves`` table;
+:data:`LEGACY_TABLE_NAMES` maps it onto ``aq_lines`` when such a drawing is
+adopted or reloaded, so an existing ``.gpkg`` keeps opening.
 
 Storage is a GeoPackage beside the project (durable, indexed, curve-capable).
 When the project has no directory yet — an unsaved project — the document falls
@@ -36,29 +41,34 @@ from qgis.core import (
 
 from ..style import cad_layer, hatches, linetypes, symbology
 from ..style.symbology import (
-    FIELD_COLOR, FIELD_DASH, FIELD_LAYER, FIELD_LTSCALE, FIELD_LTYPE,
-    FIELD_LWEIGHT, FIELD_PAT_ANGLE, FIELD_PAT_SCALE, FIELD_PATTERN,
-    FIELD_RGB, FIELD_TYPE, FIELD_WIDTH,
+    FIELD_COLOR, FIELD_DASH, FIELD_HEIGHT, FIELD_LAYER, FIELD_LTSCALE,
+    FIELD_LTYPE, FIELD_LWEIGHT, FIELD_PAT_ANGLE, FIELD_PAT_SCALE,
+    FIELD_PATTERN, FIELD_RGB, FIELD_ROTATION, FIELD_TEXT, FIELD_TYPE,
+    FIELD_WIDTH,
 )
 from .compat import make_field
 
-CURVES = "aq_curves"
+LINES = "aq_lines"
 POINTS = "aq_points"
 POLYGONS = "aq_polygons"
 
-TABLES = (CURVES, POINTS, POLYGONS)
+TABLES = (LINES, POINTS, POLYGONS)
+
+#: Old table names, mapped onto their current one. Read when adopting or
+#: reloading a drawing so a ``.gpkg`` written by an earlier build still opens
+#: instead of being silently replaced by empty tables.
+LEGACY_TABLE_NAMES = {"aq_curves": LINES}
 
 _GEOMETRY = {
-    CURVES: "CompoundCurve",
+    LINES: "CompoundCurve",
     POINTS: "Point",
     POLYGONS: "Polygon",
 }
 
 FIELD_HANDLE = "aq_handle"
 FIELD_CLOSED = "aq_closed"
-FIELD_TEXT = "aq_text"
-FIELD_HEIGHT = "aq_height"
-FIELD_ROTATION = "aq_rot"
+# FIELD_TEXT / FIELD_HEIGHT / FIELD_ROTATION are re-exported from
+# ``style.symbology``, which owns them because the labelling reads them.
 
 _PROJECT_SCOPE = "AutoQAD"
 
@@ -83,7 +93,7 @@ def _common_fields():
 
 def _table_fields(table):
     fields = _common_fields()
-    if table == CURVES:
+    if table == LINES:
         fields.append(make_field(FIELD_CLOSED, "Int"))
     elif table == POLYGONS:
         fields.extend([
@@ -186,6 +196,25 @@ class DrawingDocument(object):
         return [layer for layer in (self.table(n) for n in TABLES)
                 if layer is not None]
 
+    def all_entities(self, table_names=None):
+        """Return ``[(table_name, feature_id), ...]`` for the whole drawing.
+
+        This is what the ``ALL`` keyword at a Select-objects prompt expands
+        into, so it has to speak the same ``(table, id)`` language the map
+        tool's picks do.
+        """
+        selection = []
+        for name in (table_names or TABLES):
+            layer = self.table(name)
+            if layer is None:
+                continue
+            try:
+                selection.extend((name, feature.id())
+                                 for feature in layer.getFeatures())
+            except RuntimeError:
+                continue
+        return selection
+
     def crs(self):
         for layer in self.all_tables():
             return layer.crs()
@@ -241,11 +270,8 @@ class DrawingDocument(object):
 
         found = {}
         for table in TABLES:
-            layer = QgsVectorLayer(
-                "{0}|layername={1}".format(path, table), table, "ogr")
-            if not layer.isValid():
-                return False
-            if layer.fields().indexOf(FIELD_HANDLE) < 0:
+            layer = self._load_gpkg_table(path, table)
+            if layer is None:
                 return False
             found[table] = layer
 
@@ -257,6 +283,26 @@ class DrawingDocument(object):
         self.apply_renderers()
         return True
 
+    def _load_gpkg_table(self, path, table):
+        """Load one table out of the GeoPackage at *path*, or ``None``.
+
+        Accepts the table's legacy name so a drawing written before a rename
+        still opens — the layer is named for the *current* table either way,
+        so the layer tree reads the same whatever the container holds.
+        """
+        for name in self._storage_names(table):
+            layer = QgsVectorLayer(
+                "{0}|layername={1}".format(path, name), table, "ogr")
+            if layer.isValid() and layer.fields().indexOf(FIELD_HANDLE) >= 0:
+                return layer
+        return None
+
+    @staticmethod
+    def _storage_names(table):
+        """Names *table* may be stored under, current one first."""
+        return [table] + [old for old, new in LEGACY_TABLE_NAMES.items()
+                          if new == table]
+
     def _adopt_project_layers(self):
         """Find existing AutoQAD tables already loaded in the project."""
         found = {}
@@ -264,15 +310,19 @@ class DrawingDocument(object):
             if not isinstance(layer, QgsVectorLayer):
                 continue
             custom = layer.customProperty("autoqad/table")
-            if custom in TABLES:
-                found[custom] = layer
-            elif layer.name() in TABLES and layer.fields().indexOf(
-                    FIELD_HANDLE) >= 0:
-                found[layer.name()] = layer
+            table = LEGACY_TABLE_NAMES.get(custom, custom)
+            if table in TABLES:
+                found[table] = layer
+                continue
+            table = LEGACY_TABLE_NAMES.get(layer.name(), layer.name())
+            if table in TABLES and layer.fields().indexOf(FIELD_HANDLE) >= 0:
+                found[table] = layer
         if len(found) == len(TABLES):
             self._tables = found
             for name, layer in found.items():
                 layer.setCustomProperty("autoqad/table", name)
+                if layer.name() != name:
+                    layer.setName(name)      # adopt a legacy table's new name
                 self._path_from_layer(layer)
             self.apply_renderers()
             return True
@@ -420,6 +470,43 @@ class DrawingDocument(object):
         self.apply_renderers()
         return True
 
+    def storage_path(self):
+        """The GeoPackage backing this drawing, or ``None`` when in memory."""
+        return self._gpkg_path
+
+    def commit(self):
+        """Write every table's edit buffer to storage. Returns True on success.
+
+        Commands leave their edits in the buffer so the layer undo stacks
+        survive — ``commitChanges`` clears them. This is the flush, called at
+        the points that mean "done": the session ending, the project being
+        saved, an export being written.
+
+        Editing deliberately stays *on* afterwards, so the next command does
+        not have to reopen a session that is already warm.
+        """
+        ok = True
+        for layer in self.all_tables():
+            try:
+                if layer.isEditable() and layer.isModified():
+                    ok = layer.commitChanges(stopEditing=False) and ok
+            except (RuntimeError, AttributeError):
+                ok = False
+        return ok
+
+    def clear(self):
+        """Delete every entity, leaving the tables and CAD layers in place."""
+        removed = 0
+        for name in TABLES:
+            layer = self.table(name)
+            if layer is None:
+                continue
+            ids = [feature.id() for feature in layer.getFeatures()]
+            if ids:
+                removed += self.delete(name, ids)
+        self.refresh()
+        return removed
+
     def close(self):
         """Drop the document's layers from the project."""
         for layer in list(self._tables.values()):
@@ -428,6 +515,41 @@ class DrawingDocument(object):
             except (RuntimeError, AttributeError):
                 pass
         self._tables = {}
+
+    def discard(self, delete_storage=False):
+        """Forget this drawing entirely. Returns ``(ok, message)``.
+
+        The counterpart to :meth:`ensure_open`'s recovery behaviour. Reopening
+        deliberately resurrects a drawing whose layers were removed — the data
+        is still in the GeoPackage, and silently overwriting it would turn a
+        mis-click in the layer tree into data loss. That leaves no way to say
+        "no, I meant it", which is what this is: the project's record of the
+        drawing goes, and with *delete_storage* the ``.gpkg`` goes with it.
+        """
+        path = self._gpkg_path
+        self.close()
+        self.layers = cad_layer.LayerTable()
+        self._gpkg_path = None
+
+        self.project.removeEntry(_PROJECT_SCOPE, "layers")
+        self.project.removeEntry(_PROJECT_SCOPE, "gpkg")
+
+        if not delete_storage or not path:
+            return True, "Drawing closed."
+        if not os.path.exists(path):
+            return True, "Drawing closed."
+        try:
+            os.remove(path)
+        except OSError as error:
+            return False, "Could not delete {0}: {1}".format(path, error)
+        # GDAL leaves the write-ahead journal beside the container.
+        for suffix in ("-wal", "-shm", "-journal"):
+            try:
+                if os.path.exists(path + suffix):
+                    os.remove(path + suffix)
+            except OSError:
+                pass
+        return True, "Drawing deleted: {0}".format(path)
 
     # ---- rendering ----------------------------------------------------------
 
@@ -445,14 +567,22 @@ class DrawingDocument(object):
 
     def apply_renderers(self):
         """(Re)build every table's renderer from the current drawing state."""
-        curves = self.table(CURVES)
-        if curves is not None:
-            curves.setRenderer(symbology.build_line_renderer())
-            curves.triggerRepaint()
+        lines = self.table(LINES)
+        if lines is not None:
+            lines.setRenderer(symbology.build_line_renderer())
+            lines.triggerRepaint()
 
         points = self.table(POINTS)
         if points is not None:
             points.setRenderer(symbology.build_point_renderer())
+            # TEXT entities live in the point table and are *drawn* by the
+            # labelling — without this a placed string is an invisible
+            # feature, which is exactly how the TEXT command used to look.
+            labeling = symbology.build_text_labeling(
+                self.variables.get("TEXTSIZE"))
+            if labeling is not None:
+                points.setLabeling(labeling)
+                points.setLabelsEnabled(True)
             points.triggerRepaint()
 
         polygons = self.table(POLYGONS)
@@ -632,7 +762,7 @@ class DrawingDocument(object):
     def add_curve(self, geometry, entity_type="LINE", closed=False, **kwargs):
         extra = dict(kwargs.pop("extra", None) or {})
         extra[FIELD_CLOSED] = 1 if closed else 0
-        return self.add_entity(CURVES, geometry, entity_type, extra=extra,
+        return self.add_entity(LINES, geometry, entity_type, extra=extra,
                                **kwargs)
 
     def add_point(self, geometry, entity_type="POINT", text=None,
@@ -672,8 +802,20 @@ class DrawingDocument(object):
         return 0
 
     def count(self):
-        """Total entity count across every table."""
-        return sum(layer.featureCount() for layer in self.all_tables())
+        """Total entity count across every table.
+
+        ``featureCount`` returns -1 when a provider cannot say — an
+        unreachable GeoPackage, a count still being built — and letting that
+        through turns a total into a number that reads as nonsense ("delete
+        all -1 objects?"). Unknown counts as nothing.
+        """
+        total = 0
+        for layer in self.all_tables():
+            try:
+                total += max(0, layer.featureCount())
+            except (RuntimeError, TypeError):
+                continue
+        return total
 
     # ---- persistence --------------------------------------------------------
 

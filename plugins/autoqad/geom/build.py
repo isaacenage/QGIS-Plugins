@@ -11,6 +11,9 @@ segmentisation rather than failing — a slightly heavier geometry beats a
 command that does not work.
 """
 
+import math
+
+from qgis.PyQt.QtGui import QTransform
 from qgis.core import (
     QgsCircularString,
     QgsCompoundCurve,
@@ -49,6 +52,52 @@ def polyline(points, closed=False):
 
     curve = QgsCompoundCurve()
     curve.addCurve(QgsLineString(_points(ring)))
+    return QgsGeometry(curve)
+
+
+def compound_curve(start, segments):
+    """A ``CompoundCurve`` mixing straight and circular segments.
+
+    *segments* is a list of ``("line", end)`` / ``("arc", through, end)``
+    tuples, walked from *start*. This is what a real AutoCAD polyline is: one
+    entity whose bulged segments are true arcs rather than chords through
+    their own midpoints.
+
+    Consecutive straight segments are merged into a single ``LineString``, so
+    a polyline drawn without the Arc option produces byte-for-byte what
+    :func:`polyline` would.
+    """
+    if not segments:
+        return None
+
+    curve = QgsCompoundCurve()
+    run = [tuple(start)]                  # the straight segments pending flush
+
+    def flush():
+        if len(run) >= 2:
+            curve.addCurve(QgsLineString(_points(run)))
+
+    for segment in segments:
+        kind = segment[0]
+        if kind == "arc" and construct.arc_three_points(
+                run[-1], segment[1], segment[2]) is not None:
+            flush()
+            through, end = tuple(segment[1]), tuple(segment[2])
+            curve.addCurve(QgsCircularString(
+                QgsPoint(*run[-1]), QgsPoint(*through), QgsPoint(*end)))
+            del run[:]
+            run.append(end)
+        elif kind == "arc":
+            # Collinear: no arc exists, so it degenerates to two straight
+            # segments rather than an invalid circular string.
+            run.append(tuple(segment[1]))
+            run.append(tuple(segment[2]))
+        else:
+            run.append(tuple(segment[1]))
+
+    flush()
+    if curve.nCurves() == 0:
+        return None
     return QgsGeometry(curve)
 
 
@@ -168,6 +217,51 @@ def polygon(ring, holes=None):
 
 def point(position):
     return QgsGeometry.fromPointXY(QgsPointXY(position[0], position[1]))
+
+
+# --- affine transforms -------------------------------------------------------
+#
+# These go through ``QTransform`` and ``QgsGeometry.transform`` rather than
+# rebuilding a polyline from the vertices, because a rebuild destroys curves:
+# a circle stored as two circular strings has five vertices, so scaling it by
+# hand produced a four-segment scribble where the circle used to be. An affine
+# transform moves an arc's control points and leaves it an arc.
+
+def scaled(geometry, origin, factor):
+    """Return *geometry* scaled by *factor* about *origin*, curves intact."""
+    if geometry is None or geometry.isEmpty() or factor == 0:
+        return None
+    transform = (QTransform()
+                 .translate(origin[0], origin[1])
+                 .scale(factor, factor)
+                 .translate(-origin[0], -origin[1]))
+    return _transformed(geometry, transform)
+
+
+def mirrored(geometry, axis_start, axis_end):
+    """Return *geometry* reflected across the line through the two points."""
+    if geometry is None or geometry.isEmpty():
+        return None
+    if construct.are_coincident(axis_start, axis_end):
+        return None
+
+    degrees = math.degrees(construct.angle_of(axis_start, axis_end))
+    transform = (QTransform()
+                 .translate(axis_start[0], axis_start[1])
+                 .rotate(degrees)
+                 .scale(1.0, -1.0)
+                 .rotate(-degrees)
+                 .translate(-axis_start[0], -axis_start[1]))
+    return _transformed(geometry, transform)
+
+
+def _transformed(geometry, transform):
+    clone = QgsGeometry(geometry)
+    try:
+        clone.transform(transform)
+    except (AttributeError, TypeError):   # pragma: no cover - ancient builds
+        return None
+    return None if clone.isEmpty() else clone
 
 
 # --- extraction --------------------------------------------------------------

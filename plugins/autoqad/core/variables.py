@@ -115,6 +115,25 @@ DEFINITIONS = {v.name: v for v in (
     _d("DYNMODE", "bool", True, "Dynamic input near the cursor."),
     _d("BLIPMODE", "bool", False, "Mark picked points."),
 
+    # --- plotting ----------------------------------------------------------
+    # Model space is black and ACI 7 resolves white; paper is white. PLOTSTYLE
+    # is AutoCAD's plot style table (its CTB), the mapping applied at plot time
+    # so a drawing authored on black comes out readable on a sheet without the
+    # drawing itself being touched. See ``style.plotstyle``.
+    _d("PLOTSTYLE", "str", "normal",
+       "Plot style table: normal, monochrome or grayscale."),
+    _d("PLOTLW", "bool", True, "Plot entity lineweights."),
+    _d("PLOTLWMIN", "float", 0.0,
+       "Minimum plotted lineweight in mm (0 = no floor)."),
+    _d("PLOTSHEET", "str", "ISO A3", "Plot sheet size."),
+    _d("PLOTLAND", "bool", True, "Plot in landscape orientation."),
+    _d("PLOTMARGIN", "float", 10.0, "Plot margin from the sheet edge, in mm."),
+    _d("PLOTAREA", "str", "extents",
+       "What to plot: display, extents or window."),
+    _d("PLOTSCALE", "float", 0.0,
+       "Plot scale denominator, 1:N (0 = fit to paper)."),
+    _d("PLOTDPI", "int", 300, "Plot output resolution, in dots per inch."),
+
     # --- application scope -------------------------------------------------
     _a("APERTURE", "int", 10, "Object-snap target height, in pixels."),
     _a("PICKBOX", "int", 5, "Entity-selection pick box, in pixels."),
@@ -139,6 +158,22 @@ DEFINITIONS = {v.name: v for v in (
     _a("MOVETHROTTLE", "int", 16, "Pointer pipeline interval, in ms."),
     _a("SNAPMARKERS", "bool", True, "Draw snap markers."),
     _a("CMDECHO", "bool", True, "Echo commands to the history pane."),
+    _a("DYNCMDINPUT", "bool", True,
+       "Open a command box at the cursor when you type."),
+    _a("AUTOCOMPLETE", "bool", True,
+       "Suggest and complete command names as you type."),
+    # In CAD mode the letter keys belong to the command line, which is what
+    # makes L start a line — and what takes QGIS's own single-letter
+    # shortcuts out of play while the session is on. Turn this off to hand
+    # them back and type commands in the dock instead.
+    _a("CMDKEYCAPTURE", "bool", True,
+       "Send letter keys on the canvas to the AutoQAD command line."),
+    # While AutoQAD is on, a map frame opened in QGIS's own Layout designer is
+    # given the AutoQAD plot style automatically — otherwise it would inherit
+    # model space's white-on-black and plot as a blank sheet. Turn it off to
+    # lay out the drawing exactly as the canvas shows it.
+    _a("PLOTAUTO", "bool", True,
+       "Apply the AutoQAD plot style to QGIS layout maps automatically."),
 )}
 
 

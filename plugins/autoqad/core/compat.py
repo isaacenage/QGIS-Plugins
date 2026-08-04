@@ -86,6 +86,38 @@ RENDER_MAP_UNITS = _render_unit("MapUnits")
 RENDER_PIXELS = _render_unit("Pixels")
 
 
+def _layout_unit(name):
+    """Resolve a layout unit across QGIS 3.22 - 4.x.
+
+    ``QgsUnitTypes.LayoutMillimeters`` became ``Qgis.LayoutUnit.Millimeters``.
+    """
+    if Qgis is not None:
+        try:
+            return getattr(Qgis.LayoutUnit, name)
+        except AttributeError:
+            pass
+    from qgis.core import QgsUnitTypes
+    return getattr(QgsUnitTypes, "Layout" + name)
+
+
+def _distance_unit(name):
+    """Resolve a distance unit across QGIS 3.22 - 4.x.
+
+    ``QgsUnitTypes.DistanceMeters`` became ``Qgis.DistanceUnit.Meters``.
+    """
+    if Qgis is not None:
+        try:
+            return getattr(Qgis.DistanceUnit, name)
+        except AttributeError:
+            pass
+    from qgis.core import QgsUnitTypes
+    return getattr(QgsUnitTypes, "Distance" + name)
+
+
+LAYOUT_MM = _layout_unit("Millimeters")
+DISTANCE_METERS = _distance_unit("Meters")
+
+
 # --- field construction ------------------------------------------------------
 
 def _metatype(kind):

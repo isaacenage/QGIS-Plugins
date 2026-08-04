@@ -7,12 +7,12 @@
 name=AutoQAD
 qgisMinimumVersion=3.22
 qgisMaximumVersion=4.99
-description=CAD-style drawing in QGIS — an AutoCAD-like command line, object snaps, precision input and true AutoCAD symbology (ACI colors, linetypes, lineweights, hatch patterns). By Isaac Enage (byZenterra).
+description=CAD-style drawing in QGIS — an AutoCAD-like command line, object snaps, precision input and true AutoCAD symbology (ACI colors, linetypes, lineweights, hatch patterns).
 version=0.1
 author=Isaac Enage
 email=isaacenagework@gmail.com
 
-about=AutoQAD by Isaac Enage brings CAD drafting to QGIS. Draw with an AutoCAD-style command line (LINE, PLINE, ARC, CIRCLE, RECTANG, OFFSET, TRIM, FILLET, HATCH …), snap with full object snaps (endpoint, midpoint, center, intersection, perpendicular, tangent, quadrant), and constrain with ortho and polar tracking. Entities carry real AutoCAD symbology — the 256-color ACI palette, acad.lin linetypes, millimetre lineweights and acad.pat hatch patterns — so drawings look like CAD, not like GIS. Built for floor plans and site drawings, and scriptable by LLM agents through QGIS MCP. Developed and maintained by Isaac Enage of byZenterra.
+about=AutoQAD brings CAD drafting to QGIS. Draw with an AutoCAD-style command line (LINE, PLINE, ARC, CIRCLE, RECTANG, OFFSET, TRIM, FILLET, HATCH …), snap with full object snaps (endpoint, midpoint, center, intersection, perpendicular, tangent, quadrant), and constrain with ortho and polar tracking. Entities carry real AutoCAD symbology — the 256-color ACI palette, acad.lin linetypes, millimetre lineweights and acad.pat hatch patterns — so drawings look like CAD, not like GIS. Built for floor plans and site drawings, and scriptable by LLM agents through QGIS MCP.
 
 tracker=https://github.com/isaacenage/QGIS-Plugins/issues
 repository=https://github.com/isaacenage/QGIS-Plugins

@@ -50,6 +50,8 @@ test-pure:
 	python test/test_document_guard.py
 	python test/test_flow_layout.py
 	python test/test_variables.py
+	python test/test_plotstyle.py
+	python test/test_plot_geometry.py
 
 # Run the full suite (needs a sourced QGIS environment).
 test: compile

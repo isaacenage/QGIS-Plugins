@@ -5,7 +5,7 @@ Pure module: no Qt, no QGIS.
 
 A CAD layer is *not* a QGIS layer here. Every entity carries an ``aq_layer``
 attribute naming its CAD layer, and the renderer builds one rule per CAD layer.
-That keeps the QGIS layer count at three (curves, points, polygons) no matter
+That keeps the QGIS layer count at three (lines, points, polygons) no matter
 how many CAD layers a drawing has, which is what keeps the spatial index and
 the snapping locator fast.
 

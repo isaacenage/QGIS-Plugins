@@ -14,8 +14,8 @@ from qgis.core import QgsGeometry, QgsPointXY
 
 from ..engine.command import Command
 from ..engine.prompt import (
-    ENTER, AnglePrompt, DistancePrompt, IntegerPrompt, PointPrompt,
-    RubberGeometry, RubberLine, SelectionPrompt,
+    ENTER, AnglePrompt, DistancePrompt, IntegerPrompt, KeywordPrompt,
+    PointPrompt, RubberGeometry, RubberLine, SelectionPrompt,
 )
 from ..geom import build, construct
 
@@ -236,20 +236,17 @@ class ScaleCommand(_SelectionCommand):
         if self.is_finished(base):
             return
 
-        factor = yield DistancePrompt("Specify scale factor",
-                                      base_point=base)
+        factor = yield DistancePrompt(
+            "Specify scale factor", base_point=base,
+            rubber=RubberGeometry(self.geometries_of(selection), base,
+                                  mode="scale"))
         if self.is_finished(factor) or float(factor) <= 0:
             return
 
         ratio = float(factor)
 
         def scale(geometry):
-            points = build.vertices_of(geometry)
-            if not points:
-                return None
-            scaled = construct.scale(points, base, ratio)
-            return build.polyline(scaled,
-                                  closed=build.is_closed(geometry))
+            return build.scaled(geometry, base, ratio)
 
         count = self.transform_selection(selection, scale)
         self.write("{0} object(s) scaled.".format(count))
@@ -274,18 +271,14 @@ class MirrorCommand(_SelectionCommand):
         if self.is_finished(second):
             return
 
-        erase = yield PointPrompt("Erase source objects?",
-                                  options=["Yes", "No"], default="No")
+        erase = yield KeywordPrompt("Erase source objects?", ["Yes", "No"],
+                                    default="No")
         if self.is_cancelled(erase):
             return
         delete_source = erase == "Yes"
 
         def reflect(geometry):
-            points = build.vertices_of(geometry)
-            if not points:
-                return None
-            mirrored = construct.mirror(points, first, second)
-            return build.polyline(mirrored, closed=build.is_closed(geometry))
+            return build.mirrored(geometry, first, second)
 
         count = self.copy_selection(selection, reflect)
 
@@ -542,9 +535,9 @@ class ArrayCommand(_SelectionCommand):
         if self.is_finished(selection) or not selection:
             return
 
-        kind = yield PointPrompt("Enter array type",
-                                 options=["Rectangular", "POlar"],
-                                 default="Rectangular")
+        kind = yield KeywordPrompt("Enter array type",
+                                   ["Rectangular", "POlar"],
+                                   default="Rectangular")
         if self.is_cancelled(kind):
             return
         if kind is ENTER:

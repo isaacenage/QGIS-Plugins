@@ -19,7 +19,7 @@ from qgis.core import QgsGeometry, QgsPointXY, QgsWkbTypes
 from qgis.gui import QgsRubberBand, QgsVertexMarker
 
 from ..engine import prompt as prompts
-from ..geom import construct
+from ..geom import build, construct
 from . import snap as snap_module
 
 
@@ -180,12 +180,16 @@ class PreviewManager(object):
                 angle = math.degrees(math.atan2(dy, dx))
                 clone.rotate(-angle, QgsPointXY(anchor[0], anchor[1]))
             elif descriptor.mode == "scale":
-                reference = math.hypot(dx, dy)
-                if reference <= 0:
+                # The factor is the cursor's distance from the base point,
+                # which is exactly what the runner sends a DistancePrompt when
+                # the click lands — so the preview and the result agree.
+                # (This branch used to assign an unused attribute, so SCALE
+                # previewed nothing at all.)
+                factor = math.hypot(dx, dy)
+                scaled = build.scaled(clone, anchor, factor)
+                if scaled is None:
                     continue
-                # Scale factor is taken from cursor distance, normalised so a
-                # cursor one unit away is unity.
-                clone.transform_scale = reference
+                clone = scaled
             combined = clone if combined is None else combined.combine(clone)
 
         if combined is None or combined.isEmpty():

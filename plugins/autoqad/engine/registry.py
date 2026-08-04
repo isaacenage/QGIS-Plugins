@@ -10,7 +10,31 @@ table, so a newly added command appears everywhere at once.
 Alias resolution follows AutoCAD: an exact name wins, then an exact alias, then
 a unique case-insensitive prefix. That last rule is why typing ``REC`` reaches
 ``RECTANG`` without it being declared as an alias.
+
+:meth:`CommandRegistry.suggest` is the same knowledge served differently — a
+ranked list for the as-you-type suggestion box, where being *nearly* right
+still has to surface something. Keeping it here rather than in the widget is
+what lets the ranking be unit-tested without a canvas.
 """
+
+import difflib
+
+from collections import namedtuple
+
+#: One row of the suggestion list. *hint* is the alias that matched, or "".
+Suggestion = namedtuple("Suggestion", "name hint description rank")
+
+#: Ranking tiers, best first. An exact alias wins outright because typing
+#: ``PL`` and meaning anything other than PLINE is not a thing a CAD user
+#: does; everything below it is degrees of "you might have meant".
+RANK_ALIAS_EXACT = 0
+RANK_NAME_PREFIX = 1
+RANK_ALIAS_PREFIX = 2
+RANK_CONTAINS = 3
+RANK_FUZZY = 4
+
+#: How alike a name has to be before it is offered as a near miss.
+FUZZY_THRESHOLD = 0.6
 
 
 class CommandRegistry(object):
@@ -109,6 +133,66 @@ class CommandRegistry(object):
         hits.extend(a for a in sorted(self._aliases) if a.startswith(key)
                     and self._aliases[a] not in hits)
         return hits
+
+    # ---- as-you-type suggestions ----
+
+    def _rank(self, name, aliases, key):
+        """How well *key* matches this command, or ``None`` for not at all."""
+        if key in aliases:
+            return (RANK_ALIAS_EXACT, key)
+        if name.startswith(key):
+            return (RANK_NAME_PREFIX, "")
+        for alias in aliases:
+            if alias.startswith(key):
+                return (RANK_ALIAS_PREFIX, alias)
+        if key in name:
+            return (RANK_CONTAINS, "")
+        ratio = difflib.SequenceMatcher(None, name, key).ratio()
+        if ratio >= FUZZY_THRESHOLD:
+            return (RANK_FUZZY, "")
+        return None
+
+    def suggest(self, prefix, limit=8):
+        """Return ranked :class:`Suggestion` rows for a partly typed command.
+
+        Matching widens as it goes: exact alias, then names starting with what
+        was typed, then aliases starting with it, then names *containing* it —
+        so ``POL`` offers ``POLYGON`` and would offer an ``MPOLYGON`` too —
+        and finally near misses, which is what makes a typo recoverable
+        instead of silently matching nothing.
+        """
+        key = str(prefix or "").strip().upper()
+        if not key:
+            return []
+
+        rows = []
+        for name in self._order:
+            command = self._commands[name]
+            aliases = sorted(a for a, target in self._aliases.items()
+                             if target == name)
+            scored = self._rank(name, aliases, key)
+            if scored is None:
+                continue
+            rank, hint = scored
+            rows.append(Suggestion(name, hint,
+                                   command.description or "", rank))
+
+        rows.sort(key=lambda row: (row.rank, row.name))
+        return rows[:limit] if limit else rows
+
+    def best_completion(self, prefix):
+        """Return the name to finish *prefix* with inline, or ``""``.
+
+        Only ever *extends* what was typed — a completion that rewrote the
+        first letters would fight the user's own keystrokes.
+        """
+        key = str(prefix or "").strip().upper()
+        if not key:
+            return ""
+        for row in self.suggest(key, limit=0):
+            if row.name.startswith(key):
+                return row.name
+        return ""
 
     def describe(self, name):
         """Return ``(name, aliases, description)`` for *name*, or ``None``."""

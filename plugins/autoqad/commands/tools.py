@@ -8,7 +8,7 @@ and leaving them runnable headless from the scripting facade.
 
 from ..engine.command import Command
 from ..engine.prompt import (
-    CANCEL, ENTER, PointPrompt, SelectionPrompt, StringPrompt,
+    CANCEL, ENTER, KeywordPrompt, PointPrompt, SelectionPrompt, StringPrompt,
 )
 from ..geom import build, construct
 from ..style import aci, cad_layer, linetypes
@@ -283,8 +283,8 @@ class UnitsCommand(Command):
             except (TypeError, ValueError):
                 pass
 
-        direction = yield PointPrompt(
-            "Angle direction", options=["Counterclockwise", "Clockwise"],
+        direction = yield KeywordPrompt(
+            "Angle direction", ["Counterclockwise", "Clockwise"],
             default="Counterclockwise")
         if direction == "Clockwise":
             self.set_var("ANGDIR", 1)
@@ -329,6 +329,60 @@ class RedoCommand(Command):
         self.write("Redo." if redone else "Nothing to redo.")
         return
         yield        # noqa: unreachable - keeps run() a generator
+
+
+class SaveDrawingCommand(Command):
+    """Write pending edits to the drawing's storage.
+
+    Commands leave their edits in each table's buffer so the undo stacks
+    survive — committing clears them. That flush normally happens when the
+    session ends or the project is saved; this is the explicit "write it now".
+    """
+
+    name = "QSAVE"
+    aliases = ("SAVEDWG",)
+    description = "Write pending drawing edits to storage."
+    group = "tools"
+    modifies = False
+
+    def run(self):
+        if not self.document.is_open:
+            self.write("No drawing is open.")
+        elif self.document.commit():
+            self.write("Drawing saved.")
+        else:
+            self.write("Some edits could not be written. Check the log.")
+        return
+        yield        # noqa: unreachable - keeps run() a generator
+
+
+class EraseAllCommand(Command):
+    """Delete every entity in the drawing, leaving the CAD layers behind.
+
+    ``ERASE`` with the ``ALL`` keyword does the same thing; this is the
+    version you can put on a button, and it confirms first because there is no
+    selection step to make the scope obvious.
+    """
+
+    name = "ERASEALL"
+    aliases = ("DELALL",)
+    description = "Delete every object in the drawing."
+    group = "modify"
+
+    def run(self):
+        total = self.document.count()
+        if not total:
+            self.write("The drawing is already empty.")
+            return
+
+        answer = yield KeywordPrompt(
+            "Delete all {0} object(s)?".format(total), ["Yes", "No"],
+            default="No")
+        if answer != "Yes":
+            self.write("Nothing erased.")
+            return
+
+        self.write("{0} object(s) erased.".format(self.document.clear()))
 
 
 class HelpCommand(Command):
@@ -388,5 +442,6 @@ class PurgeCommand(Command):
 TOOL_COMMANDS = (
     LayerCommand, MakeLayerCommand, DraftingSettingsCommand, OptionsCommand,
     HatchEditCommand, SetVarCommand, IdCommand, DistanceCommand, AreaCommand,
-    UnitsCommand, UndoCommand, RedoCommand, HelpCommand, PurgeCommand,
+    UnitsCommand, UndoCommand, RedoCommand, SaveDrawingCommand,
+    EraseAllCommand, HelpCommand, PurgeCommand,
 )

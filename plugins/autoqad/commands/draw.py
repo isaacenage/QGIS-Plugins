@@ -8,11 +8,12 @@ counter and no dispatch table — the control flow *is* the AutoCAD prompt flow.
 
 import math
 
+from ..core.document import LINES
 from ..engine.command import Command
 from ..engine.prompt import (
-    CANCEL, ENTER, AnglePrompt, DistancePrompt, IntegerPrompt, PointPrompt,
-    RubberArc, RubberCircle, RubberLine, RubberPolyline, RubberRectangle,
-    StringPrompt,
+    CANCEL, ENTER, AnglePrompt, DistancePrompt, IntegerPrompt, KeywordPrompt,
+    PointPrompt, RubberArc, RubberCircle, RubberLine, RubberPolyline,
+    RubberRectangle, StringPrompt,
 )
 from ..geom import build, construct
 
@@ -45,7 +46,7 @@ class LineCommand(Command):
 
             if answer == "Undo":
                 if drawn:
-                    self.document.delete("aq_curves", [drawn.pop()])
+                    self.document.delete(LINES, [drawn.pop()])
                     previous = first if not drawn else previous
                     if drawn:
                         previous = self._end_of(drawn[-1])
@@ -69,7 +70,7 @@ class LineCommand(Command):
             previous = answer
 
     def _end_of(self, feature_id):
-        layer = self.document.table("aq_curves")
+        layer = self.document.table(LINES)
         feature = layer.getFeature(feature_id)
         ends = build.endpoints_of(feature.geometry())
         return ends[1] if ends else None
@@ -88,12 +89,16 @@ class PolylineCommand(Command):
         if self.is_finished(start):
             return
 
-        points = [start]
+        # Segments, not just vertices: an arc segment carries its own
+        # through-point, which is what lets it be built as a true circular
+        # arc instead of a straight chord bent through that point.
+        segments = []
         arc_mode = False
 
         while True:
+            points = self._vertices(start, segments)
             options = ["Arc" if not arc_mode else "Line", "Undo"]
-            if len(points) >= 3:
+            if len(segments) >= 2:
                 options.append("Close")
 
             message = ("Specify next point of arc or" if arc_mode
@@ -112,29 +117,41 @@ class PolylineCommand(Command):
                 arc_mode = False
                 continue
             if answer == "Undo":
-                if len(points) > 1:
-                    points.pop()
+                if segments:
+                    segments.pop()
                 else:
                     self.write("Nothing to undo.")
                 continue
             if answer == "Close":
-                points.append(points[0])
+                segments.append(self._segment(arc_mode, points, start))
                 break
 
-            if arc_mode and len(points) >= 1:
-                # A polyline arc is drawn tangent to the previous segment; the
-                # tangent through-point is what makes it continuous.
-                through = self._tangent_through(points, answer)
-                points.append(through)
-            points.append(answer)
+            segments.append(self._segment(arc_mode, points, answer))
 
-        if len(points) < 2:
+        if not segments:
             return
 
-        closed = construct.are_coincident(points[0], points[-1])
-        geometry = build.polyline(points, closed=closed)
+        vertices = self._vertices(start, segments)
+        closed = construct.are_coincident(vertices[0], vertices[-1])
+        geometry = build.compound_curve(start, segments)
         if geometry is not None:
             self.document.add_curve(geometry, "PLINE", closed=closed)
+
+    def _segment(self, arc_mode, points, target):
+        """Build one polyline segment ending at *target*."""
+        if not arc_mode:
+            return ("line", target)
+        # A polyline arc leaves the previous segment tangentially; the tangent
+        # through-point is what makes the run continuous.
+        return ("arc", self._tangent_through(points, target), target)
+
+    @staticmethod
+    def _vertices(start, segments):
+        """Every vertex walked so far — what the rubber-band preview draws."""
+        points = [start]
+        for segment in segments:
+            points.extend(segment[1:])
+        return points
 
     @staticmethod
     def _tangent_through(points, target):
@@ -353,7 +370,18 @@ class ArcCommand(Command):
             return None
 
         start_angle = construct.angle_of(center, start)
-        end_angle = float(answer)
+
+        if answer == "Angle":
+            # The keyword arrives as its own name; running it through float()
+            # raised ValueError and killed the command mid-prompt.
+            included = yield AnglePrompt("Specify included angle",
+                                         base_point=center)
+            if self.is_finished(included):
+                return None
+            end_angle = start_angle + float(included)
+        else:
+            end_angle = float(answer)
+
         return build.arc(center, radius, start_angle, end_angle, True)
 
 
@@ -388,9 +416,15 @@ class PolygonCommand(Command):
                 return
             ring = construct.polygon_from_edge(first, second, sides)
         else:
-            mode = yield PointPrompt(
-                "Enter an option", options=["Inscribed", "Circumscribed"],
-                default="Inscribed", allow_enter=True)
+            # A keyword prompt, not a point prompt: this question has no
+            # answer a canvas click could give, and asking for a point meant a
+            # stray click silently chose "Inscribed" by being a coordinate
+            # that is not the string "Circumscribed".
+            mode = yield KeywordPrompt(
+                "Enter an option", ["Inscribed", "Circumscribed"],
+                default="Inscribed")
+            if self.is_cancelled(mode):
+                return
             inscribed = mode != "Circumscribed"
 
             radius = yield DistancePrompt(

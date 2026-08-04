@@ -2,8 +2,8 @@
 name=Title Plotter PH
 qgisMinimumVersion=3.22
 qgisMaximumVersion=4.99
-description=Plugin for plotting Philippine land titles from technical descriptions. By Isaac Enage (byZenterra).
-about=Title Plotter PH by Isaac Enage helps non-surveyors and professionals plot lots using bearing and distance, based on tie points. Designed to work with Philippine land titles. Requires no GIS background. Developed and maintained by Isaac Enage of byZenterra. Guides, updates, and more QGIS plugins by Isaac Enage are at https://qgis.byzenterra.org/titleplotterph
+description=Plugin for plotting Philippine land titles from technical descriptions.
+about=Title Plotter PH helps non-surveyors and professionals plot lots using bearing and distance, based on tie points. Designed to work with Philippine land titles. Requires no GIS background. Guides, updates, and more QGIS plugins are at https://qgis.byzenterra.org/titleplotterph
 
 version=2.1.2
 author=Isaac Enage

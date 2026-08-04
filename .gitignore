@@ -27,6 +27,9 @@ next-env.d.ts
 # Visual brainstorming companion scratch
 .superpowers/
 
+# Local reference material for Claude/LLMs — never pushed
+/reference/
+
 # Local agent/AI tooling — never commit
 .claude/
 .agents/
